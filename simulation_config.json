@@ -7,7 +7,7 @@
     "ideal_setups": [
       {
         "name": "Survival Engine",
-        "requires_cards": ["Survival of the Fittest", "Squee"],
+        "requires_cards": ["Survival of the Fittest", "Squee, Goblin Nabob"],
         "requires_colors": ["G"],
         "turn_limit": 4
       },
@@ -15,13 +15,13 @@
         "name": "Counter Protection",
         "requires_cards": ["Counterspell"],
         "requires_colors": ["U"],
-        "turn_limit": 2
+        "turn_limit": 4
       },
       {
         "name": "Naturalize Access",
         "requires_cards": ["Naturalize"],
         "requires_colors": ["G"],
-        "turn_limit": 2
+        "turn_limit": 4
       }
     ]
   }

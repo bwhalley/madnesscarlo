@@ -20,6 +20,8 @@ Perfect for testing MTG deck builds, especially combo-oriented strategies that r
 - 📊 **Excel output** - Detailed statistics and success rates
 - ⚙️ **JSON configuration** - Define key cards and ideal setups
 - 🎯 **Condition system** - Model mana requirements, color requirements, and card effects
+- 🃏 **Auto-mulligan logic** - Intelligent London mulligan with configurable criteria
+- ⏱️ **Flexible turn tracking** - Evaluate setups at specific turn limits
 - 📈 **Progress tracking** - Real-time simulation progress with tqdm
 
 ## Installation
@@ -69,17 +71,32 @@ Example configuration:
 {
   "runs": 1000,
   "turns": 4,
-  "key_cards": ["Survival of the Fittest", "Squee"],
+  "key_card_turn_limit": 4,
+  "key_cards": ["Survival of the Fittest", "Squee, Goblin Nabob"],
   "ideal_setups": [
     {
       "name": "Survival Engine",
-      "requires_cards": ["Survival of the Fittest", "Squee"],
+      "requires_cards": ["Survival of the Fittest", "Squee, Goblin Nabob"],
       "requires_colors": ["G"],
       "turn_limit": 4
+    },
+    {
+      "name": "Counter Protection",
+      "requires_cards": ["Counterspell"],
+      "requires_colors": ["U"],
+      "turn_limit": 2
     }
   ]
 }
 ```
+
+### Turn-Based Evaluation
+
+The simulator tracks exactly when each card is seen and when mana colors become available:
+- **Flexible simulation length**: Run any number of turns (4, 6, 8, etc.)
+- **Per-setup turn limits**: Each ideal setup is evaluated at its specific `turn_limit`
+- **Example**: "Counter Protection" requires Counterspell + U mana by turn 2, even if the simulation runs 6+ turns
+- **Key card tracking**: Configure `key_card_turn_limit` to control when key cards should be evaluated (default: 4)
 
 ## Deck Format
 
@@ -101,12 +118,13 @@ Create a CSV file with the following columns:
 
 ## Output
 
-The simulator generates an Excel file with four sheets:
+The simulator generates an Excel file with five sheets:
 
 1. **Card Stats** - See % and Cast % for each card
 2. **Key Card Stats** - Success rate for seeing key cards by turn 4
-3. **Ideal Setups** - Success rate for assembling specific combos
-4. **Summary** - Average lands, cards seen, and simulation parameters
+3. **Ideal Setups** - Success rate for assembling specific combos (evaluated at each setup's turn_limit)
+4. **Mulligan Stats** - Distribution of mulligan counts across games
+5. **Summary** - Average lands, cards seen, mulligan rate, and simulation parameters
 
 ## Project Structure
 
@@ -123,11 +141,34 @@ madnesschains/
 ## How It Works
 
 1. **Deck Parsing** - Loads deck from CSV with card conditions
-2. **Game State** - Tracks hand, lands, mana colors, and cards seen
-3. **Turn Simulation** - Plays lands, casts spells, draws cards for N turns
-4. **Card Actions** - Resolves effects like "Careful Study" (draw 2, discard 2)
-5. **Aggregation** - Collects statistics across thousands of simulations
-6. **Export** - Outputs results to Excel for analysis
+2. **Mulligan Logic** - Auto-mulligan hands with 0-1 lands, 5+ lands, or no creatures
+3. **Game State** - Tracks hand, lands, mana colors, and cards seen by turn
+4. **Turn Simulation** - Plays lands, casts spells, draws cards for N turns
+5. **Card Actions** - Resolves effects like "Careful Study" (draw 2, discard 2)
+6. **Setup Evaluation** - Checks if ideal setups were achieved by their specific turn limits
+7. **Aggregation** - Collects statistics across thousands of simulations
+8. **Export** - Outputs results to Excel for analysis
+
+## Mulligan Logic
+
+The simulator uses London mulligan rules with intelligent auto-mulligan:
+
+**Auto-Mulligan Criteria:**
+- 0 or 1 lands in hand
+- 5 or more lands in hand
+- No creatures in hand
+
+**After Keeping a Hand:**
+- For each mulligan taken, one card is removed (bottomed)
+- **If 4 lands in hand**: Prefer to bottom a land
+- **Otherwise**: Bottom a non-key, non-land card
+- Key cards (from config) are protected from being bottomed when possible
+
+**Results:**
+- ~69% of games keep the opening 7
+- ~21% mulligan to 6
+- ~7% mulligan to 5
+- ~2% mulligan to 4 or fewer
 
 ## Example Deck
 
