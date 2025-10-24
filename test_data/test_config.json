@@ -1,0 +1,23 @@
+{
+  "deck": "test_data/minimal_deck.csv",
+  "runs": 100,
+  "turns": 4,
+  "output": "test_results.xlsx",
+  "key_cards": ["Grizzly Bears", "Savannah Lions"],
+  "key_card_turn_limit": 4,
+  "ideal_setups": [
+    {
+      "name": "Two Color Mana",
+      "requires_cards": [],
+      "requires_colors": ["G", "W"],
+      "turn_limit": 3
+    },
+    {
+      "name": "Early Creatures",
+      "requires_cards": ["Grizzly Bears", "Savannah Lions"],
+      "requires_colors": ["G", "W"],
+      "turn_limit": 4
+    }
+  ]
+}
+

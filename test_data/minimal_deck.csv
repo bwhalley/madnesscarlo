@@ -1,0 +1,7 @@
+Card Name,Quantity,Type,Mana Cost,Conditions
+Forest,12,Land,,effect:mana_G;category:land
+Plains,12,Land,,effect:mana_W;category:land
+Grizzly Bears,8,Creature,1G,requires:lands>=2;requires:color=G
+Savannah Lions,8,Creature,W,requires:lands>=1;requires:color=W
+Giant Growth,4,Instant,G,requires:lands>=1;requires:color=G
+

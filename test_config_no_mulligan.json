@@ -1,0 +1,19 @@
+{
+    "deck": "deck.csv",
+    "runs": 500,
+    "turns": 4,
+    "output": "no_mulligan_test.xlsx",
+    "key_cards": ["Naturalize", "Counterspell", "Survival of the Fittest", "Squee, Goblin Nabob"],
+    "mulligan_strategy": {
+      "enabled": false
+    },
+    "ideal_setups": [
+      {
+        "name": "Survival Engine",
+        "requires_cards": ["Survival of the Fittest", "Squee, Goblin Nabob"],
+        "requires_colors": ["G"],
+        "turn_limit": 4
+      }
+    ]
+}
+
