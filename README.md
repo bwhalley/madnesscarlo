@@ -151,24 +151,79 @@ madnesschains/
 
 ## Mulligan Logic
 
-The simulator uses London mulligan rules with intelligent auto-mulligan:
+The simulator uses London mulligan rules with **configurable auto-mulligan strategy**. All mulligan logic is defined in `simulation_config.json` for easy customization:
 
-**Auto-Mulligan Criteria:**
-- 0 or 1 lands in hand
-- 5 or more lands in hand
-- No creatures in hand
+### Configuration
 
-**After Keeping a Hand:**
-- For each mulligan taken, one card is removed (bottomed)
-- **If 4 lands in hand**: Prefer to bottom a land
-- **Otherwise**: Bottom a non-key, non-land card
-- Key cards (from config) are protected from being bottomed when possible
+```json
+"mulligan_strategy": {
+  "enabled": true,
+  "min_lands": 2,
+  "max_lands": 4,
+  "requires_creature": true,
+  "max_mulligans": 7,
+  "bottom_priority": {
+    "prefer_land_at_count": 4,
+    "protect_key_cards": true
+  }
+}
+```
 
-**Results:**
+### Parameters
+
+- **`enabled`** (bool): Enable/disable auto-mulligan logic entirely
+- **`min_lands`** (int): Mulligan if lands < this value (default: 2)
+- **`max_lands`** (int): Mulligan if lands > this value (default: 4)
+- **`requires_creature`** (bool): Mulligan if no creatures in hand (default: true)
+- **`max_mulligans`** (int): Safety limit for mulligan loops (default: 7)
+- **`bottom_priority`**:
+  - **`prefer_land_at_count`** (int): Bottom a land if hand has exactly this many lands (default: 4)
+  - **`protect_key_cards`** (bool): Avoid bottoming key cards when possible (default: true)
+
+### How It Works
+
+1. Draw 7 cards
+2. Check mulligan criteria (lands, creatures)
+3. If criteria not met, shuffle back and draw 7 again
+4. After keeping a hand, bottom N cards (where N = mulligan count)
+5. Card selection for bottoming respects priority settings
+
+### Example Results (Default Strategy: 2-4 lands, requires creature)
+
 - ~69% of games keep the opening 7
 - ~21% mulligan to 6
 - ~7% mulligan to 5
 - ~2% mulligan to 4 or fewer
+
+### Custom Strategies
+
+**No Mulligan** (always keep):
+```json
+"mulligan_strategy": {
+  "enabled": false
+}
+```
+
+**Aggressive** (exactly 3 lands):
+```json
+"mulligan_strategy": {
+  "enabled": true,
+  "min_lands": 3,
+  "max_lands": 3,
+  "requires_creature": true
+}
+```
+Result: ~27% keep opening hand, avg 2.4 mulligans per game
+
+**Lenient** (accept more variance):
+```json
+"mulligan_strategy": {
+  "enabled": true,
+  "min_lands": 1,
+  "max_lands": 6,
+  "requires_creature": false
+}
+```
 
 ## Example Deck
 
@@ -188,6 +243,31 @@ Included is a "Madness" themed deck featuring:
 | `--output` | Output Excel filename | `simulation_results.xlsx` |
 | `--config` | Path to JSON config | `simulation_config.json` |
 
+## Testing
+
+This project includes a comprehensive test suite with 80% code coverage.
+
+### Running Tests
+
+```bash
+# Quick test
+./run_tests.sh
+
+# With coverage report
+./run_tests.sh coverage
+
+# Fast tests only
+./run_tests.sh quick
+```
+
+### Test Coverage
+
+- **49 tests** covering all core functionality
+- **80% code coverage** of `madness.py`
+- Tests for: condition parsing, deck loading, game state, mulligan logic, simulation, and more
+
+See `TESTING.md` and `TEST_SUMMARY.md` for detailed testing documentation.
+
 ## Contributing
 
 Feel free to open issues or submit PRs for:
@@ -195,6 +275,11 @@ Feel free to open issues or submit PRs for:
 - Improved condition parsing
 - Additional statistics tracking
 - UI improvements
+
+**Please run tests before submitting PRs:**
+```bash
+./run_tests.sh
+```
 
 ## License
 

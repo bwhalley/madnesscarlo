@@ -216,60 +216,85 @@ def has_creature_in_hand(hand, deck):
             return True
     return False
 
-def should_mulligan(hand, deck):
+def should_mulligan(hand, deck, strategy):
     """
-    Determine if a hand should be mulliganed based on:
-    - 0 or 1 lands
-    - 5 or more lands
-    - No creatures
+    Determine if a hand should be mulliganed based on strategy config.
+    
+    Default strategy:
+    - min_lands: 2 (mulligan if < 2 lands)
+    - max_lands: 4 (mulligan if > 4 lands)
+    - requires_creature: true (mulligan if no creatures)
     """
+    if not strategy or not strategy.get("enabled", True):
+        return False  # Never mulligan if disabled
+    
     land_count = count_lands_in_hand(hand, deck)
     has_creature = has_creature_in_hand(hand, deck)
     
-    if land_count <= 1:
+    min_lands = strategy.get("min_lands", 2)
+    max_lands = strategy.get("max_lands", 4)
+    requires_creature = strategy.get("requires_creature", True)
+    
+    if land_count < min_lands:
         return True
-    if land_count >= 5:
+    if land_count > max_lands:
         return True
-    if not has_creature:
+    if requires_creature and not has_creature:
         return True
     
     return False
 
-def choose_card_to_remove(hand, deck, key_cards):
+def choose_card_to_remove(hand, deck, key_cards, strategy):
     """
     Choose which card to remove after keeping a mulligan hand.
-    Preference:
-    - If 4 lands in hand, remove a random land
-    - Otherwise, remove a non-key-card that's not a land
+    Uses strategy from config to determine priority.
+    
+    Default preference:
+    - If land_count == prefer_land_at_count, remove a random land
+    - Otherwise, remove a non-key-card that's not a land (if protect_key_cards is True)
     - Fallback: remove any card
     """
     land_count = count_lands_in_hand(hand, deck)
     all_cards = list(hand.elements())
     
-    # If exactly 4 lands, prefer to remove a land
-    if land_count == 4:
+    # Get bottom priority settings from strategy
+    bottom_priority = strategy.get("bottom_priority", {}) if strategy else {}
+    prefer_land_at_count = bottom_priority.get("prefer_land_at_count", 4)
+    protect_key_cards = bottom_priority.get("protect_key_cards", True)
+    
+    # If land count matches preference, remove a land
+    if land_count == prefer_land_at_count:
         lands = [card for card in all_cards if "land" in deck.card_info.get(card, {}).get("type", "").lower()]
         if lands:
             return random.choice(lands)
     
-    # Otherwise, prefer to remove non-key, non-land cards
-    non_key_non_land = [
-        card for card in all_cards
-        if card not in key_cards and "land" not in deck.card_info.get(card, {}).get("type", "").lower()
-    ]
-    if non_key_non_land:
-        return random.choice(non_key_non_land)
+    # Otherwise, prefer to remove non-key, non-land cards (if protection is enabled)
+    if protect_key_cards:
+        non_key_non_land = [
+            card for card in all_cards
+            if card not in key_cards and "land" not in deck.card_info.get(card, {}).get("type", "").lower()
+        ]
+        if non_key_non_land:
+            return random.choice(non_key_non_land)
     
     # Fallback: remove any card
     return random.choice(all_cards) if all_cards else None
 
-def perform_mulligan(deck, key_cards):
+def perform_mulligan(deck, key_cards, strategy):
     """
     Perform mulligan logic according to London mulligan rules.
+    Uses strategy from config to determine mulligan criteria.
     Returns: (hand, mulligan_count)
     """
+    # If mulligan is disabled, just draw 7 and keep
+    if not strategy or not strategy.get("enabled", True):
+        hand = Counter()
+        for card in deck.draw(7):
+            hand[card] += 1
+        return hand, 0
+    
     mulligan_count = 0
-    max_mulligans = 7  # Safety limit
+    max_mulligans = strategy.get("max_mulligans", 7)
     
     # Draw initial hand
     hand = Counter()
@@ -277,7 +302,7 @@ def perform_mulligan(deck, key_cards):
         hand[card] += 1
     
     # Keep mulliganing until we get a keepable hand
-    while should_mulligan(hand, deck) and mulligan_count < max_mulligans:
+    while should_mulligan(hand, deck, strategy) and mulligan_count < max_mulligans:
         mulligan_count += 1
         
         # Put cards back and reshuffle
@@ -292,7 +317,7 @@ def perform_mulligan(deck, key_cards):
     
     # After keeping, remove one card per mulligan taken
     for _ in range(mulligan_count):
-        card_to_remove = choose_card_to_remove(hand, deck, key_cards)
+        card_to_remove = choose_card_to_remove(hand, deck, key_cards, strategy)
         if card_to_remove:
             hand[card_to_remove] -= 1
             if hand[card_to_remove] == 0:
@@ -311,9 +336,10 @@ def simulate_game(deck_csv_path, turns=4, config=None):
     deck = Deck(deck_csv_path)
     state = GameState(deck)
     
-    # Perform mulligan logic
+    # Perform mulligan logic with strategy from config
     key_cards = (config or {}).get("key_cards", [])
-    kept_hand, mulligan_count = perform_mulligan(deck, key_cards)
+    mulligan_strategy = (config or {}).get("mulligan_strategy", {})
+    kept_hand, mulligan_count = perform_mulligan(deck, key_cards, mulligan_strategy)
     
     # Set the kept hand as the opening hand
     state.turn = 0

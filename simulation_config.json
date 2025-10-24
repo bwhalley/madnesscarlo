@@ -3,7 +3,18 @@
     "runs": 1000,
     "turns": 4,
     "output": "simulation_results.xlsx",
-    "key_cards": ["Naturalize", "Counterspell", "Survival of the Fittest", "Squee"],
+    "key_cards": ["Naturalize", "Counterspell", "Survival of the Fittest", "Squee, Goblin Nabob"],
+    "mulligan_strategy": {
+      "enabled": true,
+      "min_lands": 2,
+      "max_lands": 4,
+      "requires_creature": true,
+      "max_mulligans": 7,
+      "bottom_priority": {
+        "prefer_land_at_count": 4,
+        "protect_key_cards": true
+      }
+    },
     "ideal_setups": [
       {
         "name": "Survival Engine",
