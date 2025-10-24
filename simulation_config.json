@@ -1,0 +1,27 @@
+{
+    "deck": "deck.csv",
+    "runs": 1000,
+    "turns": 4,
+    "output": "simulation_results.xlsx",
+    "key_cards": ["Naturalize", "Counterspell", "Survival of the Fittest", "Squee"],
+    "ideal_setups": [
+      {
+        "name": "Survival Engine",
+        "requires_cards": ["Survival of the Fittest", "Squee"],
+        "requires_colors": ["G"],
+        "turn_limit": 4
+      },
+      {
+        "name": "Counter Protection",
+        "requires_cards": ["Counterspell"],
+        "requires_colors": ["U"],
+        "turn_limit": 2
+      },
+      {
+        "name": "Naturalize Access",
+        "requires_cards": ["Naturalize"],
+        "requires_colors": ["G"],
+        "turn_limit": 2
+      }
+    ]
+  }
