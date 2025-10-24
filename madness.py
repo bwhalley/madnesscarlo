@@ -570,6 +570,10 @@ def simulate_game(deck_csv_path, turns=4, config=None):
     state.turn = 0
     state.hand = kept_hand
     
+    # Track opening hand for analysis
+    opening_hand_list = sorted(list(kept_hand.elements()))
+    opening_hand_size = len(opening_hand_list)
+    
     # Mark cards in opening hand as seen on turn 0
     for card in state.hand.keys():
         state.cards_seen.add(card)
@@ -629,8 +633,106 @@ def simulate_game(deck_csv_path, turns=4, config=None):
         "battlefield": dict(state.battlefield),
         "madness_casts": dict(state.madness_casts),
         "flashback_casts": dict(state.flashback_casts),
-        "cards_tutored": dict(state.cards_tutored)
+        "cards_tutored": dict(state.cards_tutored),
+        "opening_hand": opening_hand_list,
+        "opening_hand_size": opening_hand_size
     }
+
+
+# ==========================================================
+# Opening Hand Analysis
+# ==========================================================
+
+def extract_hand_pattern(opening_hand, deck, config):
+    """
+    Extract a pattern string from an opening hand.
+    Pattern includes: land count, key cards present, creature count.
+    """
+    key_cards = (config or {}).get("key_cards", [])
+    
+    # Count lands
+    land_count = sum(1 for card in opening_hand 
+                     if "land" in deck.card_info.get(card, {}).get("type", "").lower())
+    
+    # Count creatures
+    creature_count = sum(1 for card in opening_hand 
+                         if "creature" in deck.card_info.get(card, {}).get("type", "").lower())
+    
+    # Identify key cards present
+    key_present = sorted([card for card in opening_hand if card in key_cards])
+    
+    # Build pattern string
+    pattern_parts = [f"{land_count}L", f"{creature_count}C"]
+    
+    if key_present:
+        # Abbreviate long names for readability
+        abbreviated = []
+        for card in key_present:
+            if card == "Survival of the Fittest":
+                abbreviated.append("Survival")
+            elif card == "Squee, Goblin Nabob":
+                abbreviated.append("Squee")
+            else:
+                abbreviated.append(card)
+        pattern_parts.append("+" + "+".join(abbreviated))
+    
+    return " ".join(pattern_parts)
+
+
+def analyze_opening_hands(all_results, deck, config):
+    """
+    Analyze which opening hand patterns lead to ideal setup success.
+    
+    Returns DataFrame with patterns and their success rates.
+    """
+    from collections import defaultdict
+    
+    # Group results by pattern
+    pattern_data = defaultdict(lambda: {
+        "count": 0,
+        "setup_success": Counter(),
+        "total_setups_succeeded": 0
+    })
+    
+    for result in all_results:
+        pattern = extract_hand_pattern(result["opening_hand"], deck, config)
+        pattern_data[pattern]["count"] += 1
+        
+        # Track which setups succeeded
+        setups_succeeded_this_game = 0
+        for setup_name, succeeded in result["setup_results"].items():
+            if succeeded:
+                pattern_data[pattern]["setup_success"][setup_name] += 1
+                setups_succeeded_this_game += 1
+        
+        pattern_data[pattern]["total_setups_succeeded"] += setups_succeeded_this_game
+    
+    # Build DataFrame
+    rows = []
+    for pattern, data in sorted(pattern_data.items(), 
+                                 key=lambda x: x[1]["total_setups_succeeded"], 
+                                 reverse=True):
+        row = {
+            "Pattern": pattern,
+            "Games": data["count"],
+        }
+        
+        # Add success rates for each setup
+        for setup_name, successes in sorted(data["setup_success"].items()):
+            rate = (successes / data["count"]) * 100
+            row[f"{setup_name} %"] = round(rate, 1)
+        
+        # Overall success metric (average across all setups)
+        if data["setup_success"]:
+            total_possible = data["count"] * len(data["setup_success"])
+            total_successes = sum(data["setup_success"].values())
+            row["Avg Success %"] = round((total_successes / total_possible) * 100, 1)
+        else:
+            row["Avg Success %"] = 0.0
+        
+        rows.append(row)
+    
+    return pd.DataFrame(rows)
 
 
 # ==========================================================
@@ -655,9 +757,13 @@ def run_simulations(deck_csv_path, runs=1000, turns=4, config=None):
     tutored_counter = Counter()
     total_creatures_on_board = 0
     total_graveyard_size = 0
+    
+    # Store all results for opening hand analysis
+    all_results = []
 
     for _ in tqdm(range(runs), desc="Simulating games"):
         result = simulate_game(deck_csv_path, turns, config=config)
+        all_results.append(result)  # Store for later analysis
 
         # Aggregate basic stats
         for c in result["cards_seen"]:
@@ -772,8 +878,12 @@ def run_simulations(deck_csv_path, runs=1000, turns=4, config=None):
         "Simulations Run": runs,
         "Turns Simulated": turns
     }
+    
+    # Opening hand analysis
+    deck = Deck(deck_csv_path)
+    opening_hands_df = analyze_opening_hands(all_results, deck, config)
 
-    return seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, madness_df, flashback_df, tutored_df, summary
+    return seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, madness_df, flashback_df, tutored_df, opening_hands_df, summary
 
 
 # ==========================================================
@@ -781,12 +891,13 @@ def run_simulations(deck_csv_path, runs=1000, turns=4, config=None):
 # ==========================================================
 
 def export_results(seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, 
-                   madness_df, flashback_df, tutored_df, summary, output_file="simulation_results.xlsx"):
+                   madness_df, flashback_df, tutored_df, opening_hands_df, summary, output_file="simulation_results.xlsx"):
     with pd.ExcelWriter(output_file) as writer:
         seen_df.to_excel(writer, index=False, sheet_name="Card Stats")
         key_df.to_excel(writer, index=False, sheet_name="Key Card Stats")
         setup_df.to_excel(writer, index=False, sheet_name="Ideal Setups")
         mulligan_df.to_excel(writer, index=False, sheet_name="Mulligan Stats")
+        opening_hands_df.to_excel(writer, index=False, sheet_name="Opening Hands")
         graveyard_df.to_excel(writer, index=False, sheet_name="Graveyard Stats")
         battlefield_df.to_excel(writer, index=False, sheet_name="Battlefield Stats")
         madness_df.to_excel(writer, index=False, sheet_name="Madness Casts")
@@ -826,9 +937,9 @@ def main():
     output = args.output or config.get("output", "simulation_results.xlsx")
 
     results = run_simulations(deck_path, runs=runs, turns=turns, config=config)
-    seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, madness_df, flashback_df, tutored_df, summary = results
+    seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, madness_df, flashback_df, tutored_df, opening_hands_df, summary = results
     export_results(seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, 
-                   madness_df, flashback_df, tutored_df, summary, output)
+                   madness_df, flashback_df, tutored_df, opening_hands_df, summary, output)
     print("\n📊 Simulation Summary:")
     for k, v in summary.items():
         print(f"  {k}: {v}")

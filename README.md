@@ -23,6 +23,12 @@ Perfect for testing MTG deck builds, especially combo-oriented strategies that r
 - 🃏 **Auto-mulligan logic** - Intelligent London mulligan with configurable criteria
 - ⏱️ **Flexible turn tracking** - Evaluate setups at specific turn limits
 - 📈 **Progress tracking** - Real-time simulation progress with tqdm
+- 🎰 **Opening hand analysis** - Identify which opening 7s lead to winning setups
+- 🧠 **Pattern recognition** - Correlate hand composition with success rates
+- 🪦 **Graveyard tracking** - Monitor cards entering graveyard from discards
+- 🎪 **Battlefield tracking** - Track creatures and permanents in play
+- ⚡ **Madness & Flashback** - Full support for alternative casting costs
+- 🔄 **Recursion mechanics** - Handle returns from graveyard (Squee, etc.)
 
 ## Installation
 
@@ -98,6 +104,31 @@ The simulator tracks exactly when each card is seen and when mana colors become 
 - **Example**: "Counter Protection" requires Counterspell + U mana by turn 2, even if the simulation runs 6+ turns
 - **Key card tracking**: Configure `key_card_turn_limit` to control when key cards should be evaluated (default: 4)
 
+### Opening Hand Analysis
+
+The simulator automatically analyzes which opening hand patterns correlate with setup success:
+
+**Pattern Format**: `{lands}L {creatures}C [+KeyCard1+KeyCard2...]`
+
+Examples:
+- `3L 2C` - 3 lands, 2 creatures, no key cards
+- `2L 1C +Survival` - 2 lands, 1 creature, has Survival of the Fittest
+- `3L 2C +Squee+Survival` - 3 lands, 2 creatures, has both key cards
+
+**How to Use**:
+1. Run simulation as normal (automatically included)
+2. Open the **"Opening Hands"** sheet in Excel
+3. Sort by **"Avg Success %"** to see best patterns
+4. Filter by **"Games >= 5"** for statistical significance
+5. Use insights for mulligan decisions!
+
+**Example Insights**:
+- "Hands with Survival + Squee have 100% Survival Engine success"
+- "3 lands optimal - 2 lands more variance, 4 lands flooding"
+- "Counterspell provides 100% Counter Protection in any hand"
+
+See `OPENING_HANDS_FEATURE_SUMMARY.md` for detailed analysis.
+
 ## Deck Format
 
 Create a CSV file with the following columns:
@@ -118,13 +149,30 @@ Create a CSV file with the following columns:
 
 ## Output
 
-The simulator generates an Excel file with five sheets:
+The simulator generates an Excel file with **11 comprehensive sheets**:
 
+### Core Statistics
 1. **Card Stats** - See % and Cast % for each card
 2. **Key Card Stats** - Success rate for seeing key cards by turn 4
 3. **Ideal Setups** - Success rate for assembling specific combos (evaluated at each setup's turn_limit)
 4. **Mulligan Stats** - Distribution of mulligan counts across games
-5. **Summary** - Average lands, cards seen, mulligan rate, and simulation parameters
+
+### Opening Hand Analysis 🎰
+5. **Opening Hands** - Which opening hand patterns lead to setup success
+   - Shows patterns like "3L 2C +Survival+Squee"
+   - Success rate for each ideal setup per pattern
+   - Average success across all setups
+   - Identifies god hands vs mulligan hands
+
+### Game State Tracking
+6. **Graveyard Stats** - Cards in graveyard by turn 4 (from discards)
+7. **Battlefield Stats** - Creatures and lands in play by turn 4
+8. **Madness Casts** - Frequency of madness triggers by card
+9. **Flashback Casts** - Frequency of flashback usage by card
+10. **Tutored Cards** - What cards are searched for (e.g., Survival targets)
+
+### Summary
+11. **Summary** - Average lands, cards seen, mulligan rate, graveyard size, and simulation parameters
 
 ## Project Structure
 
