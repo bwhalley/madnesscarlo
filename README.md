@@ -1,4 +1,4 @@
-# MTG Madness Chains Simulator
+# MTG Madness Carlo Simulator
 
 A Monte Carlo simulation tool for analyzing Magic: The Gathering deck performance, with a focus on "Madness" and card draw chains.
 
