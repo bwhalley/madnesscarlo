@@ -39,15 +39,31 @@ def parse_condition_string(cond_str):
 # ==========================================================
 # Ideal Setup Evaluation
 # ==========================================================
-def evaluate_ideal_setups(state, first_four_seen, config):
+def evaluate_ideal_setups(state, config):
     setups = config.get("ideal_setups", [])
     setup_results = {}
 
     for setup in setups:
         name = setup["name"]
-        cards_ok = all(c in first_four_seen for c in setup.get("requires_cards", []))
-        colors_ok = all(color in state.mana_colors for color in setup.get("requires_colors", []))
         turn_limit = setup.get("turn_limit", 4)
+        
+        # Check if all required cards were seen by the turn_limit
+        required_cards = setup.get("requires_cards", [])
+        cards_ok = all(
+            card in state.cards_seen_by_turn and state.cards_seen_by_turn[card] <= turn_limit
+            for card in required_cards
+        )
+        
+        # Check if all required colors were available by the turn_limit
+        required_colors = setup.get("requires_colors", [])
+        colors_ok = True
+        if required_colors:
+            # Find if any turn <= turn_limit had all required colors
+            colors_ok = any(
+                all(color in colors for color in required_colors)
+                for turn, colors in state.mana_colors_by_turn.items()
+                if turn <= turn_limit
+            )
 
         # Check both cards and color requirements
         setup_results[name] = cards_ok and colors_ok
@@ -97,15 +113,20 @@ class GameState:
         self.lands_in_play = 0
         self.turn = 1
         self.cards_seen = set()
+        self.cards_seen_by_turn = {}  # Maps card_name -> turn_first_seen
         self.spells_cast = Counter()
         self.cards_drawn_total = 0
         self.mana_colors = set()
+        self.mana_colors_by_turn = {}  # Maps turn -> set of colors available
 
     def draw_card(self, n=1):
         drawn = self.deck.draw(n)
         for card in drawn:
             self.hand[card] += 1
             self.cards_seen.add(card)
+            # Track which turn this card was first seen
+            if card not in self.cards_seen_by_turn:
+                self.cards_seen_by_turn[card] = self.turn
         self.cards_drawn_total += len(drawn)
 
     def play_land(self):
@@ -120,6 +141,8 @@ class GameState:
                         self.mana_colors.add(color.upper())
                 self.hand[card] -= 1
                 self.lands_in_play += 1
+                # Track which colors are available at each turn
+                self.mana_colors_by_turn[self.turn] = self.mana_colors.copy()
                 break
 
     def has_color(self, color):
@@ -175,8 +198,10 @@ card_actions = {
 def simulate_game(deck_csv_path, turns=4, config=None):
     deck = Deck(deck_csv_path)
     state = GameState(deck)
+    
+    # Opening hand is drawn on turn 0 (before turn 1 begins)
+    state.turn = 0
     state.draw_card(7)
-    first_four_seen = set(state.cards_seen)
 
     for turn in range(1, turns + 1):
         state.turn = turn
@@ -185,15 +210,21 @@ def simulate_game(deck_csv_path, turns=4, config=None):
             if card in card_actions and state.can_cast(card):
                 card_actions[card](state)
         state.draw_card(1)
-        if turn <= 4:
-            first_four_seen.update(state.cards_seen)
 
+    # Evaluate ideal setups using turn-based tracking
+    setup_results = evaluate_ideal_setups(state, config or {})
+    
+    # For key cards, check if they were seen by turn 4 (configurable default)
     key_cards = (config or {}).get("key_cards", [])
-    key_seen = {k: (k in first_four_seen) for k in key_cards}
-    setup_results = evaluate_ideal_setups(state, first_four_seen, config or {})
+    key_card_turn_limit = (config or {}).get("key_card_turn_limit", 4)
+    key_seen = {
+        k: (k in state.cards_seen_by_turn and state.cards_seen_by_turn[k] <= key_card_turn_limit)
+        for k in key_cards
+    }
 
     return {
         "cards_seen": list(state.cards_seen),
+        "cards_seen_by_turn": dict(state.cards_seen_by_turn),
         "key_seen": key_seen,
         "setup_results": setup_results,
         "spells_cast": dict(state.spells_cast),
