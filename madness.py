@@ -64,9 +64,23 @@ def evaluate_ideal_setups(state, config):
                 for turn, colors in state.mana_colors_by_turn.items()
                 if turn <= turn_limit
             )
+        
+        # Check if required cards are in graveyard
+        required_in_graveyard = setup.get("requires_in_graveyard", [])
+        graveyard_ok = all(
+            card in state.graveyard and state.graveyard[card] > 0
+            for card in required_in_graveyard
+        )
+        
+        # Check if required cards are in play (battlefield)
+        required_in_play = setup.get("requires_in_play", [])
+        in_play_ok = all(
+            card in state.battlefield and state.battlefield[card] > 0
+            for card in required_in_play
+        )
 
-        # Check both cards and color requirements
-        setup_results[name] = cards_ok and colors_ok
+        # Check all requirements
+        setup_results[name] = cards_ok and colors_ok and graveyard_ok and in_play_ok
 
     return setup_results
 
@@ -118,6 +132,11 @@ class GameState:
         self.cards_drawn_total = 0
         self.mana_colors = set()
         self.mana_colors_by_turn = {}  # Maps turn -> set of colors available
+        self.graveyard = Counter()  # Cards in graveyard
+        self.battlefield = Counter()  # Creatures/permanents in play
+        self.madness_casts = Counter()  # Track madness casts
+        self.flashback_casts = Counter()  # Track flashback casts
+        self.cards_tutored = Counter()  # Track tutored cards
 
     def draw_card(self, n=1):
         drawn = self.deck.draw(n)
@@ -141,6 +160,7 @@ class GameState:
                         self.mana_colors.add(color.upper())
                 self.hand[card] -= 1
                 self.lands_in_play += 1
+                self.battlefield[card] += 1  # Track specific land in play
                 # Track which colors are available at each turn
                 self.mana_colors_by_turn[self.turn] = self.mana_colors.copy()
                 break
@@ -160,35 +180,240 @@ class GameState:
             if target == "color" and op == "=" and not self.has_color(value):
                 return False
         return True
+    
+    def move_to_graveyard(self, card_name: str, from_hand=True):
+        """Move a card to graveyard from hand or battlefield."""
+        if from_hand and self.hand[card_name] > 0:
+            self.hand[card_name] -= 1
+        elif not from_hand and self.battlefield[card_name] > 0:
+            self.battlefield[card_name] -= 1
+        self.graveyard[card_name] += 1
+    
+    def get_card_effect(self, card_name: str, effect_prefix: str):
+        """Get effect value for a card (e.g., 'madness_' -> '2G')."""
+        card_data = self.deck.card_info.get(card_name, {})
+        conds = card_data.get("conditions", [])
+        for cond in conds:
+            if cond["type"] == "effect" and cond["value"].startswith(effect_prefix):
+                return cond["value"].replace(effect_prefix, "")
+        return None
+    
+    def has_effect(self, card_name: str, effect_name: str):
+        """Check if a card has a specific effect."""
+        card_data = self.deck.card_info.get(card_name, {})
+        conds = card_data.get("conditions", [])
+        for cond in conds:
+            if cond["type"] == "effect" and cond["value"].startswith(effect_name):
+                return True
+        return False
+    
+    def play_creature(self, card_name: str):
+        """Play a creature from hand to battlefield."""
+        if self.hand[card_name] > 0:
+            self.hand[card_name] -= 1
+            self.battlefield[card_name] += 1
+            self.spells_cast[card_name] += 1
+    
+    def cast_with_madness(self, card_name: str):
+        """Cast a card using madness (from discard)."""
+        # Card goes directly to battlefield if creature, else to graveyard after resolution
+        card_data = self.deck.card_info.get(card_name, {})
+        if "creature" in card_data.get("type", "").lower():
+            self.battlefield[card_name] += 1
+        else:
+            self.graveyard[card_name] += 1
+        self.madness_casts[card_name] += 1
+        self.spells_cast[card_name] += 1
+    
+    def cast_with_flashback(self, card_name: str):
+        """Cast a card using flashback from graveyard (exile after)."""
+        if self.graveyard[card_name] > 0:
+            self.graveyard[card_name] -= 1
+            # Card is exiled after flashback (not tracked for now)
+            self.flashback_casts[card_name] += 1
+            self.spells_cast[card_name] += 1
+            # Create token if applicable (e.g., Roar of the Wurm)
+            if "roar" in card_name.lower():
+                self.battlefield["Wurm Token"] += 1
 
 
 # ---------------- Card Action Definitions ---------------- #
 
-def discard_random(state: GameState, n=2):
+def discard_random(state: GameState, n=2, enable_madness=True):
+    """Discard n random cards, optionally casting madness cards."""
     all_cards = list(state.hand.elements())
     for _ in range(min(n, len(all_cards))):
         discard = random.choice(all_cards)
         state.hand[discard] -= 1
         all_cards.remove(discard)
+        
+        # Check if this card has madness and can be cast
+        if enable_madness and state.has_effect(discard, "madness_"):
+            madness_cost = state.get_card_effect(discard, "madness_")
+            # For simplicity, assume we can always pay madness cost if we have the colors
+            # Parse madness cost (e.g., "2G" means need G mana)
+            can_cast_madness = True
+            if madness_cost and madness_cost != "0":
+                # Check if we have required colors
+                for char in madness_cost:
+                    if char.isalpha() and not state.has_color(char):
+                        can_cast_madness = False
+                        break
+            
+            if can_cast_madness:
+                state.cast_with_madness(discard)
+            else:
+                state.move_to_graveyard(discard, from_hand=False)
+        else:
+            # Regular discard to graveyard
+            state.graveyard[discard] += 1
 
 def play_careful_study(state: GameState):
+    """Draw 2, discard 2 (with madness triggers)."""
     if state.hand["Careful Study"] > 0 and state.can_cast("Careful Study"):
         state.hand["Careful Study"] -= 1
+        state.graveyard["Careful Study"] += 1  # Spell goes to graveyard
         state.spells_cast["Careful Study"] += 1
         state.draw_card(2)
-        discard_random(state, 2)
+        discard_random(state, 2, enable_madness=True)
 
 def play_frantic_search(state: GameState):
+    """Draw 2, discard 2, untap 3 lands (with madness triggers)."""
     if state.hand["Frantic Search"] > 0 and state.can_cast("Frantic Search"):
         state.hand["Frantic Search"] -= 1
+        state.graveyard["Frantic Search"] += 1  # Spell goes to graveyard
         state.spells_cast["Frantic Search"] += 1
         state.draw_card(2)
-        discard_random(state, 2)
+        discard_random(state, 2, enable_madness=True)
+        # Note: Untap 3 lands effect is implicit (mana efficiency tracked elsewhere)
+
+def play_survival(state: GameState):
+    """Discard creature, tutor another creature (with madness triggers)."""
+    if state.hand["Survival of the Fittest"] > 0 and state.can_cast("Survival of the Fittest"):
+        # Play as enchantment (stays on battlefield)
+        state.hand["Survival of the Fittest"] -= 1
+        state.battlefield["Survival of the Fittest"] += 1
+        state.spells_cast["Survival of the Fittest"] += 1
+
+def activate_survival(state: GameState):
+    """Activate Survival: discard creature, tutor another creature."""
+    if state.battlefield["Survival of the Fittest"] > 0:
+        # Find a creature in hand to discard
+        creatures_in_hand = [
+            card for card in state.hand.elements()
+            if is_creature(card, state.deck)
+        ]
+        if creatures_in_hand:
+            discard = random.choice(creatures_in_hand)
+            state.hand[discard] -= 1
+            
+            # Check for madness
+            if state.has_effect(discard, "madness_"):
+                madness_cost = state.get_card_effect(discard, "madness_")
+                can_cast_madness = True
+                if madness_cost and madness_cost != "0":
+                    for char in madness_cost:
+                        if char.isalpha() and not state.has_color(char):
+                            can_cast_madness = False
+                            break
+                if can_cast_madness:
+                    state.cast_with_madness(discard)
+                else:
+                    state.graveyard[discard] += 1
+            else:
+                state.graveyard[discard] += 1
+            
+            # Tutor for a creature from library
+            creatures_in_deck = [
+                card for card in state.deck.cards
+                if is_creature(card, state.deck)
+            ]
+            if creatures_in_deck:
+                tutored = random.choice(creatures_in_deck)
+                state.deck.cards.remove(tutored)
+                state.hand[tutored] += 1
+                state.cards_seen.add(tutored)
+                if tutored not in state.cards_seen_by_turn:
+                    state.cards_seen_by_turn[tutored] = state.turn
+                state.cards_tutored[tutored] += 1
+
+def play_wild_mongrel(state: GameState):
+    """Play Wild Mongrel as creature."""
+    if state.hand["Wild Mongrel"] > 0 and state.can_cast("Wild Mongrel"):
+        state.play_creature("Wild Mongrel")
+
+def activate_wild_mongrel(state: GameState):
+    """Discard to pump Wild Mongrel (with madness triggers)."""
+    if state.battlefield["Wild Mongrel"] > 0 and len(list(state.hand.elements())) > 0:
+        discard_random(state, 1, enable_madness=True)
+
+def play_waterfront_bouncer(state: GameState):
+    """Play Waterfront Bouncer as creature."""
+    if state.hand["Waterfront Bouncer"] > 0 and state.can_cast("Waterfront Bouncer"):
+        state.play_creature("Waterfront Bouncer")
+
+def activate_waterfront_bouncer(state: GameState):
+    """Discard to bounce a creature (with madness triggers)."""
+    if state.battlefield["Waterfront Bouncer"] > 0 and len(list(state.hand.elements())) > 0:
+        discard_random(state, 1, enable_madness=True)
+
+def play_roar_flashback(state: GameState):
+    """Cast Roar of the Wurm from graveyard via flashback."""
+    if state.graveyard["Roar of the Wurm"] > 0 and state.can_cast("Roar of the Wurm"):
+        flashback_cost = state.get_card_effect("Roar of the Wurm", "flashback_")
+        # Check if we can pay flashback cost (need G mana for 3G)
+        if flashback_cost and "G" in flashback_cost and state.has_color("G"):
+            state.cast_with_flashback("Roar of the Wurm")
+
+def play_basking_rootwalla(state: GameState):
+    """Play Basking Rootwalla from hand."""
+    if state.hand["Basking Rootwalla"] > 0 and state.can_cast("Basking Rootwalla"):
+        state.play_creature("Basking Rootwalla")
+
+def play_arrogant_wurm(state: GameState):
+    """Play Arrogant Wurm from hand."""
+    if state.hand["Arrogant Wurm"] > 0 and state.can_cast("Arrogant Wurm"):
+        state.play_creature("Arrogant Wurm")
+
+def play_wonder(state: GameState):
+    """Play Wonder from hand."""
+    if state.hand["Wonder"] > 0 and state.can_cast("Wonder"):
+        state.play_creature("Wonder")
 
 card_actions = {
     "Careful Study": play_careful_study,
-    "Frantic Search": play_frantic_search
+    "Frantic Search": play_frantic_search,
+    "Survival of the Fittest": play_survival,
+    "Wild Mongrel": play_wild_mongrel,
+    "Waterfront Bouncer": play_waterfront_bouncer,
+    "Basking Rootwalla": play_basking_rootwalla,
+    "Arrogant Wurm": play_arrogant_wurm,
+    "Wonder": play_wonder,
 }
+
+# Activated abilities (run after main card actions)
+activated_abilities = {
+    "Survival of the Fittest": activate_survival,
+    "Wild Mongrel": activate_wild_mongrel,
+    "Waterfront Bouncer": activate_waterfront_bouncer,
+    "Roar of the Wurm": play_roar_flashback,
+}
+
+
+# ==========================================================
+# Helper: Returns Mechanic
+# ==========================================================
+
+def process_returns(state: GameState):
+    """Process cards with 'returns' effect (e.g., Squee) at start of turn."""
+    cards_to_return = []
+    for card in state.graveyard.keys():
+        if state.has_effect(card, "returns") and state.graveyard[card] > 0:
+            cards_to_return.append(card)
+    
+    for card in cards_to_return:
+        state.graveyard[card] -= 1
+        state.hand[card] += 1
 
 
 # ==========================================================
@@ -354,10 +579,29 @@ def simulate_game(deck_csv_path, turns=4, config=None):
 
     for turn in range(1, turns + 1):
         state.turn = turn
+        
+        # Process returns at start of turn (e.g., Squee)
+        process_returns(state)
+        
+        # Play land for turn
         state.play_land()
+        
+        # Cast spells from hand
         for card in list(state.hand.keys()):
             if card in card_actions and state.can_cast(card):
                 card_actions[card](state)
+        
+        # Activate abilities (Survival, Wild Mongrel, flashback, etc.)
+        for card in list(state.battlefield.keys()):
+            if card in activated_abilities:
+                activated_abilities[card](state)
+        
+        # Check for flashback spells in graveyard
+        for card in list(state.graveyard.keys()):
+            if card in activated_abilities:
+                activated_abilities[card](state)
+        
+        # Draw for turn
         state.draw_card(1)
 
     # Evaluate ideal setups using turn-based tracking
@@ -380,7 +624,12 @@ def simulate_game(deck_csv_path, turns=4, config=None):
         "lands_in_play": state.lands_in_play,
         "cards_drawn_total": state.cards_drawn_total,
         "mana_colors": list(state.mana_colors),
-        "mulligan_count": mulligan_count
+        "mulligan_count": mulligan_count,
+        "graveyard": dict(state.graveyard),
+        "battlefield": dict(state.battlefield),
+        "madness_casts": dict(state.madness_casts),
+        "flashback_casts": dict(state.flashback_casts),
+        "cards_tutored": dict(state.cards_tutored)
     }
 
 
@@ -397,6 +646,15 @@ def run_simulations(deck_csv_path, runs=1000, turns=4, config=None):
     setup_success = Counter()
     mulligan_counts = Counter()
     total_mulligans = 0
+    
+    # New graveyard tracking
+    graveyard_counter = Counter()
+    battlefield_counter = Counter()
+    madness_counter = Counter()
+    flashback_counter = Counter()
+    tutored_counter = Counter()
+    total_creatures_on_board = 0
+    total_graveyard_size = 0
 
     for _ in tqdm(range(runs), desc="Simulating games"):
         result = simulate_game(deck_csv_path, turns, config=config)
@@ -420,6 +678,21 @@ def run_simulations(deck_csv_path, runs=1000, turns=4, config=None):
         mull_count = result["mulligan_count"]
         mulligan_counts[mull_count] += 1
         total_mulligans += mull_count
+        
+        # Track graveyard stats
+        for card, count in result["graveyard"].items():
+            graveyard_counter[card] += count
+        for card, count in result["battlefield"].items():
+            battlefield_counter[card] += count
+        for card, count in result["madness_casts"].items():
+            madness_counter[card] += count
+        for card, count in result["flashback_casts"].items():
+            flashback_counter[card] += count
+        for card, count in result["cards_tutored"].items():
+            tutored_counter[card] += count
+        
+        total_graveyard_size += sum(result["graveyard"].values())
+        total_creatures_on_board += sum(result["battlefield"].values())
 
     # -----------------------------
     # Build output DataFrames
@@ -450,6 +723,41 @@ def run_simulations(deck_csv_path, runs=1000, turns=4, config=None):
         "Games": [mulligan_counts[m] for m in mulligan_counts],
         "Percentage": [mulligan_counts[m] / runs * 100 for m in mulligan_counts]
     }).sort_values("Mulligans").fillna(0)
+    
+    # Graveyard stats
+    graveyard_df = pd.DataFrame({
+        "Card": list(graveyard_counter.keys()),
+        "Avg in Graveyard": [graveyard_counter[c] / runs for c in graveyard_counter],
+        "In Graveyard %": [graveyard_counter[c] / runs * 100 for c in graveyard_counter]
+    }).fillna(0).sort_values("Avg in Graveyard", ascending=False)
+    
+    # Battlefield stats (creatures/permanents)
+    battlefield_df = pd.DataFrame({
+        "Card": list(battlefield_counter.keys()),
+        "Avg on Battlefield": [battlefield_counter[c] / runs for c in battlefield_counter],
+        "On Battlefield %": [battlefield_counter[c] / runs * 100 for c in battlefield_counter]
+    }).fillna(0).sort_values("Avg on Battlefield", ascending=False)
+    
+    # Madness stats
+    madness_df = pd.DataFrame({
+        "Card": list(madness_counter.keys()),
+        "Madness Casts": [madness_counter[c] for c in madness_counter],
+        "Madness Cast %": [madness_counter[c] / runs * 100 for c in madness_counter]
+    }).fillna(0).sort_values("Madness Casts", ascending=False)
+    
+    # Flashback stats
+    flashback_df = pd.DataFrame({
+        "Card": list(flashback_counter.keys()),
+        "Flashback Casts": [flashback_counter[c] for c in flashback_counter],
+        "Flashback Cast %": [flashback_counter[c] / runs * 100 for c in flashback_counter]
+    }).fillna(0).sort_values("Flashback Casts", ascending=False)
+    
+    # Tutor stats
+    tutored_df = pd.DataFrame({
+        "Card": list(tutored_counter.keys()),
+        "Times Tutored": [tutored_counter[c] for c in tutored_counter],
+        "Tutored %": [tutored_counter[c] / runs * 100 for c in tutored_counter]
+    }).fillna(0).sort_values("Times Tutored", ascending=False)
 
     # Summary overview
     summary = {
@@ -457,23 +765,33 @@ def run_simulations(deck_csv_path, runs=1000, turns=4, config=None):
         "Average Cards Seen": total_cards_seen / runs,
         "Average Mulligans": total_mulligans / runs,
         "Games with 0 Mulligans %": mulligan_counts.get(0, 0) / runs * 100,
+        "Average Graveyard Size": total_graveyard_size / runs,
+        "Average Creatures on Board": total_creatures_on_board / runs,
+        "Total Madness Casts": sum(madness_counter.values()),
+        "Total Flashback Casts": sum(flashback_counter.values()),
         "Simulations Run": runs,
         "Turns Simulated": turns
     }
 
-    return seen_df, key_df, setup_df, mulligan_df, summary
+    return seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, madness_df, flashback_df, tutored_df, summary
 
 
 # ==========================================================
 # Phase 6: Export
 # ==========================================================
 
-def export_results(seen_df, key_df, setup_df, mulligan_df, summary, output_file="simulation_results.xlsx"):
+def export_results(seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, 
+                   madness_df, flashback_df, tutored_df, summary, output_file="simulation_results.xlsx"):
     with pd.ExcelWriter(output_file) as writer:
         seen_df.to_excel(writer, index=False, sheet_name="Card Stats")
         key_df.to_excel(writer, index=False, sheet_name="Key Card Stats")
         setup_df.to_excel(writer, index=False, sheet_name="Ideal Setups")
         mulligan_df.to_excel(writer, index=False, sheet_name="Mulligan Stats")
+        graveyard_df.to_excel(writer, index=False, sheet_name="Graveyard Stats")
+        battlefield_df.to_excel(writer, index=False, sheet_name="Battlefield Stats")
+        madness_df.to_excel(writer, index=False, sheet_name="Madness Casts")
+        flashback_df.to_excel(writer, index=False, sheet_name="Flashback Casts")
+        tutored_df.to_excel(writer, index=False, sheet_name="Tutored Cards")
         pd.DataFrame([summary]).to_excel(writer, index=False, sheet_name="Summary")
     print(f"✅ Results exported to {output_file}")
 
@@ -507,8 +825,10 @@ def main():
     turns = args.turns or config.get("turns", 4)
     output = args.output or config.get("output", "simulation_results.xlsx")
 
-    seen_df, key_df, setup_df, mulligan_df, summary = run_simulations(deck_path, runs=runs, turns=turns, config=config)
-    export_results(seen_df, key_df, setup_df, mulligan_df, summary, output)
+    results = run_simulations(deck_path, runs=runs, turns=turns, config=config)
+    seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, madness_df, flashback_df, tutored_df, summary = results
+    export_results(seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, 
+                   madness_df, flashback_df, tutored_df, summary, output)
     print("\n📊 Simulation Summary:")
     for k, v in summary.items():
         print(f"  {k}: {v}")

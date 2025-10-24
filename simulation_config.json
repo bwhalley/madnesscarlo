@@ -33,6 +33,22 @@
         "requires_cards": ["Naturalize"],
         "requires_colors": ["G"],
         "turn_limit": 4
+      },
+      {
+        "name": "Wonder in Graveyard",
+        "requires_cards": ["Wonder"],
+        "requires_in_graveyard": ["Wonder"],
+        "requires_in_play": ["Island"],
+        "requires_colors": [],
+        "turn_limit": 4
+      },
+      {
+        "name": "Roar Flashback Available",
+        "requires_cards": ["Roar of the Wurm"],
+        "requires_in_graveyard": ["Roar of the Wurm"],
+        "requires_in_play": [],
+        "requires_colors": ["G"],
+        "turn_limit": 4
       }
     ]
   }
