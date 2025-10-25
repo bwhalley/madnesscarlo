@@ -2,6 +2,7 @@ import pandas as pd
 import random
 import json
 import argparse
+import os
 from collections import Counter
 from tqdm import tqdm
 
@@ -554,6 +555,79 @@ def perform_mulligan(deck, key_cards, strategy):
 
 
 # ==========================================================
+# Sideboard Support
+# ==========================================================
+
+def apply_sideboard_plan(deck_csv_path, sideboard_csv_path, plan_config):
+    """
+    Apply a sideboard plan to create a modified deck.
+    
+    Args:
+        deck_csv_path: Path to main deck CSV
+        sideboard_csv_path: Path to sideboard CSV
+        plan_config: Dict with 'board_in' and 'board_out' specifications
+    
+    Returns:
+        Modified deck as pandas DataFrame
+    """
+    # Load main deck and sideboard
+    deck_df = pd.read_csv(deck_csv_path)
+    sideboard_df = pd.read_csv(sideboard_csv_path)
+    
+    # Create working copy
+    modified_deck = deck_df.copy()
+    
+    # Board out (remove cards from main deck)
+    board_out = plan_config.get('board_out', {})
+    for card_name, quantity in board_out.items():
+        # Find card in deck
+        card_idx = modified_deck[modified_deck['Card Name'] == card_name].index
+        if len(card_idx) > 0:
+            idx = card_idx[0]
+            current_qty = modified_deck.loc[idx, 'Quantity']
+            new_qty = max(0, current_qty - quantity)
+            if new_qty == 0:
+                # Remove card entirely
+                modified_deck = modified_deck.drop(idx)
+            else:
+                # Reduce quantity
+                modified_deck.loc[idx, 'Quantity'] = new_qty
+    
+    # Board in (add cards from sideboard)
+    board_in = plan_config.get('board_in', {})
+    for card_name, quantity in board_in.items():
+        # Find card in sideboard
+        sb_card = sideboard_df[sideboard_df['Card Name'] == card_name]
+        if len(sb_card) > 0:
+            sb_row = sb_card.iloc[0]
+            # Check if card already exists in modified deck
+            existing = modified_deck[modified_deck['Card Name'] == card_name]
+            if len(existing) > 0:
+                # Increase quantity
+                idx = existing.index[0]
+                modified_deck.loc[idx, 'Quantity'] += quantity
+            else:
+                # Add new card to deck
+                new_row = sb_row.copy()
+                new_row['Quantity'] = quantity
+                modified_deck = pd.concat([modified_deck, pd.DataFrame([new_row])], ignore_index=True)
+    
+    return modified_deck
+
+
+def create_sideboarded_deck(deck_csv_path, sideboard_csv_path, plan_config, temp_path='temp_sideboarded_deck.csv'):
+    """
+    Create a temporary CSV file with sideboarded deck.
+    
+    Returns:
+        Path to temporary CSV file
+    """
+    modified_deck = apply_sideboard_plan(deck_csv_path, sideboard_csv_path, plan_config)
+    modified_deck.to_csv(temp_path, index=False)
+    return temp_path
+
+
+# ==========================================================
 # Phase 5: Simulation Engine
 # ==========================================================
 
@@ -926,6 +1000,8 @@ def main():
     parser.add_argument("--turns", type=int, default=4, help="Turns to simulate")
     parser.add_argument("--output", type=str, default="simulation_results.xlsx", help="Output Excel file")
     parser.add_argument("--config", type=str, default="simulation_config.json", help="Optional config JSON")
+    parser.add_argument("--sideboard", type=str, default=None, help="Sideboard plan name (e.g., 'vs_combo', 'vs_aggro')")
+    parser.add_argument("--sideboard-file", type=str, default="sideboard.csv", help="Path to sideboard CSV")
 
     args = parser.parse_args()
     config = load_config(args.config)
@@ -935,14 +1011,38 @@ def main():
     runs = args.runs or config.get("runs", 1000)
     turns = args.turns or config.get("turns", 4)
     output = args.output or config.get("output", "simulation_results.xlsx")
+    
+    # Handle sideboarding if requested
+    temp_deck_file = None
+    if args.sideboard:
+        sideboard_plans = config.get("sideboard_plans", {})
+        if args.sideboard not in sideboard_plans:
+            print(f"❌ Error: Sideboard plan '{args.sideboard}' not found in config.")
+            print(f"Available plans: {', '.join(sideboard_plans.keys())}")
+            return
+        
+        plan = sideboard_plans[args.sideboard]
+        print(f"\n🎴 Applying sideboard plan: {plan.get('name', args.sideboard)}")
+        print(f"  Boarding in: {plan.get('board_in', {})}")
+        print(f"  Boarding out: {plan.get('board_out', {})}")
+        
+        # Create sideboarded deck
+        temp_deck_file = create_sideboarded_deck(deck_path, args.sideboard_file, plan)
+        deck_path = temp_deck_file
+        print(f"  ✅ Sideboarded deck created\n")
 
-    results = run_simulations(deck_path, runs=runs, turns=turns, config=config)
-    seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, madness_df, flashback_df, tutored_df, opening_hands_df, summary = results
-    export_results(seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, 
-                   madness_df, flashback_df, tutored_df, opening_hands_df, summary, output)
-    print("\n📊 Simulation Summary:")
-    for k, v in summary.items():
-        print(f"  {k}: {v}")
+    try:
+        results = run_simulations(deck_path, runs=runs, turns=turns, config=config)
+        seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, madness_df, flashback_df, tutored_df, opening_hands_df, summary = results
+        export_results(seen_df, key_df, setup_df, mulligan_df, graveyard_df, battlefield_df, 
+                       madness_df, flashback_df, tutored_df, opening_hands_df, summary, output)
+        print("\n📊 Simulation Summary:")
+        for k, v in summary.items():
+            print(f"  {k}: {v}")
+    finally:
+        # Clean up temporary sideboarded deck file
+        if temp_deck_file and os.path.exists(temp_deck_file):
+            os.remove(temp_deck_file)
 
 if __name__ == "__main__":
     main()

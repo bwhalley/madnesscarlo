@@ -47,8 +47,43 @@
         "requires_cards": ["Roar of the Wurm"],
         "requires_in_graveyard": ["Roar of the Wurm"],
         "requires_in_play": [],
-        "requires_colors": ["G"],
-        "turn_limit": 4
+      "requires_colors": ["G"],
+      "turn_limit": 4
+    }
+  ],
+  "sideboard_plans": {
+    "vs_combo": {
+      "name": "Vs Combo",
+      "board_in": {
+        "Counterspell": 2,
+        "Blue Elemental Blast": 2
+      },
+      "board_out": {
+        "Naturalize": 2,
+        "Waterfront Bouncer": 2
       }
-    ]
+    },
+    "vs_aggro": {
+      "name": "Vs Aggro", 
+      "board_in": {
+        "Cave-In": 2,
+        "Chill": 2
+      },
+      "board_out": {
+        "Counterspell": 2,
+        "Squee, Goblin Nabob": 2
+      }
+    },
+    "vs_enchantments": {
+      "name": "Vs Enchantments",
+      "board_in": {
+        "Reverent Silence": 2,
+        "Naturalize": 2
+      },
+      "board_out": {
+        "Wonder": 1,
+        "Wild Mongrel": 3
+      }
+    }
   }
+}

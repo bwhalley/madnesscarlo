@@ -1,0 +1,8 @@
+Card Name,Quantity,Type,Mana Cost,Conditions
+Blue Elemental Blast,4,Instant,U,effect:hate_red
+Cave-In,2,Sorcery,R,effect:wipe
+Chill,2,Instant,U,effect:hate_red
+Compost,2,Instant,1G,effect:hate_black
+Pyrokinesis,1,Instant,R,effect:hate_red
+Reverent Silence,2,Instant,U,effect:hate_enchantments
+Tormod's Crypt,2,Enchantment,1G,effect:hate_graveyard

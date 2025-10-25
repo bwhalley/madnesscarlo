@@ -29,6 +29,8 @@ Perfect for testing MTG deck builds, especially combo-oriented strategies that r
 - 🎪 **Battlefield tracking** - Track creatures and permanents in play
 - ⚡ **Madness & Flashback** - Full support for alternative casting costs
 - 🔄 **Recursion mechanics** - Handle returns from graveyard (Squee, etc.)
+- 🎴 **Sideboarding support** - Test post-board configurations for different matchups
+- 🎯 **Matchup analysis** - Compare pre-board vs post-board performance
 
 ## Installation
 
@@ -64,6 +66,36 @@ python madness.py
 ```bash
 python madness.py --deck deck.csv --runs 5000 --turns 6 --output results.xlsx
 ```
+
+### Sideboarding (Post-Board Testing)
+
+Test your deck after sideboarding for different matchups:
+
+```bash
+# Test against combo decks
+python madness.py --runs 1000 --sideboard vs_combo
+
+# Test against aggro decks  
+python madness.py --runs 1000 --sideboard vs_aggro --output vs_aggro.xlsx
+
+# List available sideboard plans (will show error with list)
+python madness.py --sideboard invalid_plan
+```
+
+Define sideboard plans in `simulation_config.json`:
+```json
+{
+  "sideboard_plans": {
+    "vs_combo": {
+      "name": "Vs Combo",
+      "board_in": {"Counterspell": 2, "Blue Elemental Blast": 2},
+      "board_out": {"Naturalize": 2, "Waterfront Bouncer": 2}
+    }
+  }
+}
+```
+
+See `SIDEBOARDING_FEATURE.md` for complete documentation.
 
 ### Configuration File
 
@@ -290,6 +322,8 @@ Included is a "Madness" themed deck featuring:
 | `--turns` | Turns to simulate per game | `4` |
 | `--output` | Output Excel filename | `simulation_results.xlsx` |
 | `--config` | Path to JSON config | `simulation_config.json` |
+| `--sideboard` | Sideboard plan name (e.g., `vs_combo`) | None |
+| `--sideboard-file` | Path to sideboard CSV | `sideboard.csv` |
 
 ## Testing
 
