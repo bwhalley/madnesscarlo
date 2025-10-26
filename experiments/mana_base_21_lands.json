@@ -1,0 +1,81 @@
+{
+  "experiment_name": "mana_base_21_lands",
+  "base_deck": "deck.csv",
+  "runs_per_variant": 1500,
+  "optimization_goal": "minimize_mulligans",
+  "secondary_goals": ["maximize_survival_engine", "maximize_color_access"],
+  "comments": "Test specific 21-land configurations optimized for casting Survival (1G) and Counterspell (UU). Each variant maintains exactly 21 lands with different splits.",
+  "experiments": [
+    {
+      "type": "slot_testing",
+      "slots": [
+        {"card": "Island", "quantity": 9},
+        {"card": "Forest", "quantity": 7},
+        {"card": "Cephalid Coliseum", "quantity": 1},
+        {"card": "Yavimaya Coast", "quantity": 4}
+      ],
+      "alternatives": [
+        {
+          "comment": "Baseline: 9I, 7F, 1C, 4Y",
+          "card": "Keep both",
+          "quantity": 0
+        },
+        {
+          "comment": "More Islands for UU: 10I, 6F, 1C, 4Y",
+          "card": "Island+1_Forest-1",
+          "quantity": 0,
+          "manual_config": {"Island": 10, "Forest": 6, "Cephalid Coliseum": 1, "Yavimaya Coast": 4}
+        },
+        {
+          "comment": "More Forests: 8I, 8F, 1C, 4Y",
+          "card": "Island-1_Forest+1",
+          "quantity": 0,
+          "manual_config": {"Island": 8, "Forest": 8, "Cephalid Coliseum": 1, "Yavimaya Coast": 4}
+        },
+        {
+          "comment": "More duals, less basics: 8I, 6F, 2C, 5Y",
+          "card": "Dual_heavy",
+          "quantity": 0,
+          "manual_config": {"Island": 8, "Forest": 6, "Cephalid Coliseum": 2, "Yavimaya Coast": 5}
+        },
+        {
+          "comment": "Even more duals: 7I, 6F, 2C, 6Y",
+          "card": "Max_duals",
+          "quantity": 0,
+          "manual_config": {"Island": 7, "Forest": 6, "Cephalid Coliseum": 2, "Yavimaya Coast": 6}
+        },
+        {
+          "comment": "Blue-heavy for Counterspell: 11I, 6F, 0C, 4Y",
+          "card": "Blue_heavy",
+          "quantity": 0,
+          "manual_config": {"Island": 11, "Forest": 6, "Cephalid Coliseum": 0, "Yavimaya Coast": 4}
+        },
+        {
+          "comment": "Green-heavy for Survival: 8I, 9F, 0C, 4Y",
+          "card": "Green_heavy",
+          "quantity": 0,
+          "manual_config": {"Island": 8, "Forest": 9, "Cephalid Coliseum": 0, "Yavimaya Coast": 4}
+        },
+        {
+          "comment": "Balanced basics: 9I, 8F, 0C, 4Y",
+          "card": "Balanced_no_coliseum",
+          "quantity": 0,
+          "manual_config": {"Island": 9, "Forest": 8, "Cephalid Coliseum": 0, "Yavimaya Coast": 4}
+        },
+        {
+          "comment": "Max Yavimaya flexibility: 7I, 6F, 1C, 7Y",
+          "card": "Max_flexibility",
+          "quantity": 0,
+          "manual_config": {"Island": 7, "Forest": 6, "Cephalid Coliseum": 1, "Yavimaya Coast": 7}
+        },
+        {
+          "comment": "Conservative duals: 9I, 7F, 1C, 4Y (baseline)",
+          "card": "Conservative",
+          "quantity": 0,
+          "manual_config": {"Island": 9, "Forest": 7, "Cephalid Coliseum": 1, "Yavimaya Coast": 4}
+        }
+      ]
+    }
+  ]
+}
+

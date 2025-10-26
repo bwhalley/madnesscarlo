@@ -1,0 +1,60 @@
+{
+  "experiment_name": "mana_base_optimization",
+  "base_deck": "deck.csv",
+  "runs_per_variant": 1500,
+  "optimization_goal": "minimize_mulligans",
+  "secondary_goals": ["maximize_survival_engine", "maximize_color_access"],
+  "constraints": {
+    "deck_size": 60,
+    "max_copies": 4
+  },
+  "comments": "Optimize 21-land manabase split between Island, Forest, Cephalid Coliseum, and Yavimaya Coast. Goal: minimize mulligans while ensuring we can cast Survival of the Fittest (1G) and Counterspell (UU).",
+  "experiments": [
+    {
+      "type": "combinatorial",
+      "max_combinations": 50,
+      "slots": [
+        {
+          "name": "island_count",
+          "baseline": {"card": "Island", "quantity": 9},
+          "alternatives": [
+            {"card": "Island", "quantity": 7},
+            {"card": "Island", "quantity": 8},
+            {"card": "Island", "quantity": 10},
+            {"card": "Island", "quantity": 11}
+          ]
+        },
+        {
+          "name": "forest_count",
+          "baseline": {"card": "Forest", "quantity": 7},
+          "alternatives": [
+            {"card": "Forest", "quantity": 5},
+            {"card": "Forest", "quantity": 6},
+            {"card": "Forest", "quantity": 8},
+            {"card": "Forest", "quantity": 9}
+          ]
+        },
+        {
+          "name": "coliseum_count",
+          "baseline": {"card": "Cephalid Coliseum", "quantity": 1},
+          "alternatives": [
+            {"card": "Cephalid Coliseum", "quantity": 0},
+            {"card": "Cephalid Coliseum", "quantity": 2},
+            {"card": "Cephalid Coliseum", "quantity": 3}
+          ]
+        },
+        {
+          "name": "coast_count",
+          "baseline": {"card": "Yavimaya Coast", "quantity": 4},
+          "alternatives": [
+            {"card": "Yavimaya Coast", "quantity": 2},
+            {"card": "Yavimaya Coast", "quantity": 3},
+            {"card": "Yavimaya Coast", "quantity": 5},
+            {"card": "Yavimaya Coast", "quantity": 6}
+          ]
+        }
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,18 @@
+{
+  "experiment_name": "mana_base_duals",
+  "base_deck": "deck.csv",
+  "runs_per_variant": 1500,
+  "optimization_goal": "minimize_mulligans",
+  "secondary_goals": ["maximize_survival_engine", "maximize_color_access"],
+  "comments": "Test different Yavimaya Coast counts (2-7) to find optimal dual land count. Compensates with Islands to maintain total land count. Assumes baseline has 4 Yavimaya Coast.",
+  "experiments": [
+    {
+      "type": "replace_quantity",
+      "card": "Yavimaya Coast",
+      "test_quantities": [2, 3, 4, 5, 6, 7],
+      "compensate_with": "Island",
+      "comment": "More duals = more flexibility but more life loss. Fewer duals = more consistent colored mana but less flexible."
+    }
+  ]
+}
+

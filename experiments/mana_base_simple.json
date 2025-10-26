@@ -1,0 +1,18 @@
+{
+  "experiment_name": "mana_base_simple",
+  "base_deck": "deck.csv",
+  "runs_per_variant": 1500,
+  "optimization_goal": "minimize_mulligans",
+  "secondary_goals": ["maximize_survival_engine"],
+  "comments": "Simple test of Island/Forest ratio while keeping Yavimaya Coast and Cephalid Coliseum constant. Assumes baseline has 9 Islands, 7 Forests, 4 Yavimaya Coast, 1 Cephalid Coliseum (21 total).",
+  "experiments": [
+    {
+      "type": "replace_quantity",
+      "card": "Island",
+      "test_quantities": [7, 8, 9, 10, 11, 12],
+      "compensate_with": "Forest",
+      "comment": "Tests Island count from 7-12, compensating with Forest. With 4 Coast + 1 Coliseum fixed, total stays at 21 lands."
+    }
+  ]
+}
+
