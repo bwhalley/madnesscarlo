@@ -31,6 +31,8 @@ Perfect for testing MTG deck builds, especially combo-oriented strategies that r
 - 🔄 **Recursion mechanics** - Handle returns from graveyard (Squee, etc.)
 - 🎴 **Sideboarding support** - Test post-board configurations for different matchups
 - 🎯 **Matchup analysis** - Compare pre-board vs post-board performance
+- ⚖️ **Deck comparison** - Side-by-side analysis of two deck configurations
+- 📈 **Delta tracking** - Measure impact of card changes on all metrics
 
 ## Installation
 
@@ -96,6 +98,53 @@ Define sideboard plans in `simulation_config.json`:
 ```
 
 See `SIDEBOARDING_FEATURE.md` for complete documentation.
+
+### Deck Comparison
+
+Compare two deck configurations side-by-side to analyze the impact of card changes:
+
+```bash
+# Compare baseline deck vs variant with card swaps
+python madness.py --compare deck.csv variant.csv --runs 1000
+
+# Customize output file
+python madness.py --compare deck.csv variant.csv --runs 2000 --compare-output my_comparison.xlsx
+```
+
+**What gets compared:**
+- ✅ **Ideal setup success rates** - See how changes affect your primary goals
+- 📊 **Opening hand patterns** - Identify which patterns improved or declined
+- 🎲 **Mulligan statistics** - Track consistency improvements
+- 🎯 **Key card access** - Monitor card visibility changes
+- 📝 **Card-by-card changes** - Detailed breakdown of what changed
+
+**Output files:**
+- `comparison_results.xlsx` - Excel with 6 sheets of detailed comparison data
+- `comparison_results_summary.md` - Markdown summary with key insights
+
+**Example workflow:**
+```bash
+# 1. Test baseline
+python madness.py --runs 1000 --output baseline.xlsx
+
+# 2. Modify deck (e.g., -2 Naturalize, +2 Frantic Search)
+cp deck.csv variant.csv
+# Edit variant.csv with changes
+
+# 3. Compare
+python madness.py --compare deck.csv variant.csv --runs 1000
+
+# 4. Review comparison_results_summary.md for insights
+```
+
+**Key comparison features:**
+- **Opening Hand Development**: See how card swaps change the frequency and success of different opening hand patterns
+- **Turn-by-Turn Impact**: Understand how changes affect hand development over turns 1-4
+- **Ideal Setup Deltas**: Direct before/after comparison of your primary win condition success rates
+- **Pattern Analysis**: Identify new patterns that emerge or disappear with changes
+- **Statistical Insights**: Auto-generated analysis of improvements vs declines
+
+See `DECK_COMPARISON_PROJECT_PLAN.md` for technical details.
 
 ### Configuration File
 
@@ -324,6 +373,8 @@ Included is a "Madness" themed deck featuring:
 | `--config` | Path to JSON config | `simulation_config.json` |
 | `--sideboard` | Sideboard plan name (e.g., `vs_combo`) | None |
 | `--sideboard-file` | Path to sideboard CSV | `sideboard.csv` |
+| `--compare` | Compare two decks (e.g., `deck.csv variant.csv`) | None |
+| `--compare-output` | Comparison output filename | `comparison_results.xlsx` |
 
 ## Testing
 

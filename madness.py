@@ -1028,9 +1028,46 @@ def main():
     parser.add_argument("--config", type=str, default="simulation_config.json", help="Optional config JSON")
     parser.add_argument("--sideboard", type=str, default=None, help="Sideboard plan name (e.g., 'vs_combo', 'vs_aggro')")
     parser.add_argument("--sideboard-file", type=str, default="sideboard.csv", help="Path to sideboard CSV")
+    parser.add_argument("--compare", nargs=2, metavar=("BASELINE", "VARIANT"), 
+                        help="Compare two deck configurations (e.g., --compare deck.csv variant.csv)")
+    parser.add_argument("--compare-output", type=str, default="comparison_results.xlsx",
+                        help="Output file for comparison results")
 
     args = parser.parse_args()
     config = load_config(args.config)
+    
+    # Handle comparison mode
+    if args.compare:
+        from deck_comparison import compare_decks, print_comparison_summary, print_comparison_progress
+        from export_comparison import export_comparison_to_excel, export_comparison_to_markdown
+        
+        baseline_path, variant_path = args.compare
+        
+        print("\n" + "="*80)
+        print("DECK COMPARISON MODE".center(80))
+        print("="*80 + "\n")
+        
+        # Run comparison
+        comparison = compare_decks(
+            baseline_path=baseline_path,
+            variant_path=variant_path,
+            runs=args.runs,
+            turns=args.turns,
+            config=config,
+            progress_callback=print_comparison_progress
+        )
+        
+        # Print summary to console
+        print_comparison_summary(comparison)
+        
+        # Export results
+        excel_output = args.compare_output
+        md_output = excel_output.replace('.xlsx', '_summary.md')
+        
+        export_comparison_to_excel(comparison, excel_output)
+        export_comparison_to_markdown(comparison, md_output)
+        
+        return
 
     # CLI flags override config file
     deck_path = args.deck or config.get("deck", "deck.csv")
