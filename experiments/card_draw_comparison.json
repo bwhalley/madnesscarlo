@@ -1,0 +1,23 @@
+{
+  "experiment_name": "card_draw_comparison",
+  "base_deck": "deck.csv",
+  "runs_per_variant": 1000,
+  "optimization_goal": "maximize_survival_engine",
+  "secondary_goals": ["minimize_mulligans"],
+  "experiments": [
+    {
+      "type": "slot_testing",
+      "slots": [
+        {"card": "Careful Study", "quantity": 2}
+      ],
+      "alternatives": [
+        {"card": "Deep Analysis", "quantity": 2},
+        {"card": "Brainstorm", "quantity": 2},
+        {"card": "Frantic Search", "quantity": 1},
+        {"card": "Careful Study", "quantity": 3},
+        {"card": "Careful Study", "quantity": 1}
+      ]
+    }
+  ]
+}
+

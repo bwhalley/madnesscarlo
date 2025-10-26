@@ -1,0 +1,16 @@
+{
+  "experiment_name": "land_count_optimization",
+  "base_deck": "deck.csv",
+  "runs_per_variant": 1000,
+  "optimization_goal": "minimize_mulligans",
+  "secondary_goals": ["maximize_survival_engine"],
+  "experiments": [
+    {
+      "type": "replace_quantity",
+      "card": "Forest",
+      "test_quantities": [5, 6, 7, 8, 9, 10],
+      "compensate_with": "Island"
+    }
+  ]
+}
+

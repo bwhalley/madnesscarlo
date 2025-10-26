@@ -33,6 +33,9 @@ Perfect for testing MTG deck builds, especially combo-oriented strategies that r
 - 🎯 **Matchup analysis** - Compare pre-board vs post-board performance
 - ⚖️ **Deck comparison** - Side-by-side analysis of two deck configurations
 - 📈 **Delta tracking** - Measure impact of card changes on all metrics
+- 🔬 **Experimental framework** - Automatically test dozens of deck variants
+- 🎯 **Auto-optimization** - Find best configuration for your goals
+- ⚡ **Parallel testing** - Multi-threaded experiment execution
 
 ## Installation
 
@@ -145,6 +148,114 @@ python madness.py --compare deck.csv variant.csv --runs 1000
 - **Statistical Insights**: Auto-generated analysis of improvements vs declines
 
 See `DECK_COMPARISON_PROJECT_PLAN.md` for technical details.
+
+### Experimental Deck Optimization
+
+**Automatically find the best deck configuration** by testing multiple variants simultaneously:
+
+```bash
+# Basic experiment
+python madness.py --experiment experiments/land_count_optimization.json
+
+# With custom parameters
+python madness.py --experiment experiments/card_draw_comparison.json --runs 2000 --workers 8
+
+# Custom output file
+python madness.py --experiment experiments/creature_density.json --experiment-output my_results.xlsx
+```
+
+**What it does:**
+- 🔬 **Automated Testing** - Generate and test dozens of deck variants automatically
+- 🎯 **Goal Optimization** - Optimize for specific metrics (mulligan rate, ideal setup success, etc.)
+- ⚡ **Parallel Execution** - Test variants in parallel using all CPU cores
+- 📊 **Smart Ranking** - Automatically rank variants by performance
+- 💡 **Auto-Insights** - Generate recommendations based on results
+
+**Experiment Types:**
+
+1. **Land Count Optimization** - Find optimal land ratios
+   ```json
+   {
+     "type": "replace_quantity",
+     "card": "Forest",
+     "test_quantities": [5, 6, 7, 8, 9, 10],
+     "compensate_with": "Island"
+   }
+   ```
+
+2. **Card Slot Testing** - Compare alternative cards
+   ```json
+   {
+     "type": "slot_testing",
+     "slots": [{"card": "Careful Study", "quantity": 2}],
+     "alternatives": [
+       {"card": "Deep Analysis", "quantity": 2},
+       {"card": "Brainstorm", "quantity": 2}
+     ]
+   }
+   ```
+
+3. **Combinatorial Testing** - Test multiple changes together
+   ```json
+   {
+     "type": "combinatorial",
+     "max_combinations": 20,
+     "slots": [
+       {
+         "name": "draw_slot",
+         "baseline": {"card": "Careful Study", "quantity": 2},
+         "alternatives": [...]
+       }
+     ]
+   }
+   ```
+
+**Output:**
+- `experiment_<name>_results.xlsx` - 6 sheets with detailed analysis
+  - Summary: Experiment overview and statistics
+  - Rankings: All variants ranked by optimization goal
+  - Variant Details: Card-by-card breakdown
+  - Top 5 Comparison: Side-by-side comparison
+  - Statistical Analysis: Confidence intervals and distributions
+  - Insights: Auto-generated recommendations
+- `experiment_<name>_results_summary.md` - Quick reference with key findings
+
+**Example Workflow:**
+```bash
+# 1. Create experiment config (or use examples)
+cat experiments/land_count_optimization.json
+
+# 2. Run experiment (quick test)
+python madness.py --experiment experiments/land_count_optimization.json --runs 500
+
+# 3. Review results
+open experiment_land_count_optimization_results.xlsx
+
+# 4. Run with more samples for confidence
+python madness.py --experiment experiments/land_count_optimization.json --runs 2000
+
+# 5. Apply best variant to your deck
+# Check "Variant Details" sheet and update deck.csv
+
+# 6. Validate improvement
+python madness.py --compare deck_old.csv deck.csv --runs 1000
+```
+
+**Optimization Goals:**
+- `maximize_survival_engine` - Increase Survival Engine setup success
+- `maximize_roar_flashback` - Increase Roar of the Wurm flashback access
+- `maximize_wonder_flying` - Increase Wonder flying team success
+- `minimize_mulligans` - Reduce average mulligan count
+- `maximize_color_access` - Improve mana color availability
+- `maximize_key_card_access` - Improve key card draw rates
+
+**Example Experiments:**
+See `experiments/` directory for ready-to-use configurations:
+- `land_count_optimization.json` - Find optimal Forest/Island split
+- `card_draw_comparison.json` - Compare card draw engines
+- `creature_density.json` - Optimize creature counts for Survival
+
+Create custom experiments or modify examples for your specific needs. See `experiments/README.md` and `EXPERIMENTAL_FRAMEWORK_PROJECT_PLAN.md` for detailed documentation.
 
 ### Configuration File
 
@@ -400,6 +511,23 @@ This project includes a comprehensive test suite with 80% code coverage.
 - Tests for: condition parsing, deck loading, game state, mulligan logic, simulation, and more
 
 See `TESTING.md` and `TEST_SUMMARY.md` for detailed testing documentation.
+
+## Command-Line Options
+
+| Option | Description |
+|--------|-------------|
+| `--deck` | Path to deck CSV file (default: `deck.csv`) |
+| `--runs` | Number of simulation runs (default: 1000) |
+| `--turns` | Number of turns to simulate (default: 4) |
+| `--output` | Output Excel file path (default: `simulation_results.xlsx`) |
+| `--config` | Simulation configuration JSON (default: `simulation_config.json`) |
+| `--sideboard` | Sideboard plan name (e.g., `vs_combo`, `vs_aggro`) |
+| `--sideboard-file` | Path to sideboard CSV (default: `sideboard.csv`) |
+| `--compare` | Compare two decks (e.g., `--compare deck.csv variant.csv`) |
+| `--compare-output` | Comparison results output file (default: `comparison_results.xlsx`) |
+| `--experiment` | Run experiment from config file (e.g., `--experiment experiments/land_count.json`) |
+| `--experiment-output` | Experiment results output file (default: `experiment_<name>_results.xlsx`) |
+| `--workers` | Number of parallel workers for experiments (default: CPU count - 1) |
 
 ## Contributing
 

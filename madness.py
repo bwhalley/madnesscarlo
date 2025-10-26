@@ -1032,6 +1032,12 @@ def main():
                         help="Compare two deck configurations (e.g., --compare deck.csv variant.csv)")
     parser.add_argument("--compare-output", type=str, default="comparison_results.xlsx",
                         help="Output file for comparison results")
+    parser.add_argument("--experiment", type=str, default=None,
+                        help="Run experiment from config file (e.g., --experiment experiments/land_count.json)")
+    parser.add_argument("--experiment-output", type=str, default=None,
+                        help="Output file for experiment results (default: experiment_<name>_results.xlsx)")
+    parser.add_argument("--workers", type=int, default=None,
+                        help="Number of parallel workers for experiments (default: CPU count - 1)")
 
     args = parser.parse_args()
     config = load_config(args.config)
@@ -1066,6 +1072,60 @@ def main():
         
         export_comparison_to_excel(comparison, excel_output)
         export_comparison_to_markdown(comparison, md_output)
+        
+        return
+    
+    # Handle experiment mode
+    if args.experiment:
+        from experiment_config import load_experiment_config
+        from experiment_runner import run_experiment
+        from experiment_analyzer import analyze_experiment, print_analysis_summary
+        from export_experiment import export_experiment_results, export_experiment_markdown
+        from variant_generator import VariantGenerator
+        
+        print("\n" + "="*80)
+        print("EXPERIMENT MODE".center(80))
+        print("="*80 + "\n")
+        
+        # Load experiment config
+        experiment_config = load_experiment_config(args.experiment)
+        
+        # Override runs if specified
+        if args.runs != 1000:  # Default value
+            experiment_config.runs_per_variant = args.runs
+        
+        # Run experiment
+        experiment_results = run_experiment(
+            config=experiment_config,
+            sim_config=config,
+            num_workers=args.workers
+        )
+        
+        if not experiment_results:
+            print("❌ Experiment failed to produce results")
+            return
+        
+        # Analyze results
+        analyzed = analyze_experiment(experiment_results)
+        
+        # Print summary to console
+        print_analysis_summary(analyzed)
+        
+        # Determine output files
+        if args.experiment_output:
+            excel_output = args.experiment_output
+        else:
+            excel_output = f"experiment_{experiment_config.name}_results.xlsx"
+        
+        md_output = excel_output.replace('.xlsx', '_summary.md')
+        
+        # Export results
+        export_experiment_results(analyzed, excel_output)
+        export_experiment_markdown(analyzed, md_output)
+        
+        # Clean up temporary variant files
+        generator = VariantGenerator(experiment_config.base_deck)
+        generator.cleanup()
         
         return
 

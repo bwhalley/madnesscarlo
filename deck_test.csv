@@ -1,0 +1,18 @@
+Card Name,Quantity,Type,Mana Cost,Conditions
+Arrogant Wurm,4,Creature,2G,requires:lands>=2;color=G;effect:madness_2G
+Basking Rootwalla,4,Creature,G,requires:lands>=1;color=G;effect:madness_0
+Careful Study,4,Sorcery,U,requires:lands>=1;color=U;effect:draw2_discard2
+Cephalid Coliseum,1,Land,,effect:mana_U;category:land
+Counterspell,3,Instant,UU,
+Forest,7,Land,,effect:mana_G;category:land
+Frantic Search,4,Instant,2U,requires:lands>=3;color=U;effect:draw2_discard2
+Island,10,Land,,effect:mana_U;category:land
+Naturalize,3,Instant,1G,
+Roar of the Wurm,1,Sorcery,3G,requires:lands>=4;color=G;effect:flashback_3G
+"Squee, Goblin Nabob",4,Creature,2R,requires:lands>=2;color=R;effect:returns
+Survival of the Fittest,4,Enchantment,1G,requires:lands>=2;color=G;effect:discard1_tutor1
+Waterfront Bouncer,2,Creature,1U,requires:lands>=2;color=U;effect:discard1
+Wild Mongrel,4,Creature,1G,requires:lands>=2;color=G;effect:discard1
+Wonder,1,Creature,2U,requires:lands>=3;color=U;effect:flying
+Gilded Drake,1,Creature,1U,requires:lands>=2;color=U;
+Yavimaya Coast,3,Land,,effect:mana_U;effect:mana_G;category:land

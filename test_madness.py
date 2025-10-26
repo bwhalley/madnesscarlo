@@ -2041,6 +2041,386 @@ class TestStatisticsAndMetrics:
         assert all(card_stats_df['Seen %'] <= 100)
 
 
+# ==========================================================
+# Experimental Framework Tests
+# ==========================================================
+
+class TestExperimentConfig:
+    """Test experiment configuration loading and validation."""
+    
+    def test_load_experiment_config(self, tmp_path):
+        """Test loading experiment configuration from JSON."""
+        from experiment_config import load_experiment_config
+        
+        # Create test config
+        config_path = tmp_path / "test_experiment.json"
+        config_data = {
+            "experiment_name": "test_experiment",
+            "base_deck": "deck.csv",
+            "runs_per_variant": 500,
+            "optimization_goal": "maximize_survival_engine",
+            "experiments": [
+                {
+                    "type": "replace_quantity",
+                    "card": "Forest",
+                    "test_quantities": [7, 8, 9]
+                }
+            ]
+        }
+        
+        with open(config_path, 'w') as f:
+            json.dump(config_data, f)
+        
+        config = load_experiment_config(str(config_path))
+        
+        assert config.name == "test_experiment"
+        assert config.runs_per_variant == 500
+        assert config.optimization_goal == "maximize_survival_engine"
+        assert len(config.experiments) == 1
+    
+    def test_config_validation_fails_for_invalid_goal(self, tmp_path):
+        """Test that config validation catches invalid optimization goals."""
+        from experiment_config import load_experiment_config
+        
+        config_path = tmp_path / "invalid_config.json"
+        config_data = {
+            "experiment_name": "invalid",
+            "base_deck": "deck.csv",
+            "optimization_goal": "invalid_goal",
+            "experiments": [{"type": "replace_quantity", "card": "Forest", "test_quantities": [7]}]
+        }
+        
+        with open(config_path, 'w') as f:
+            json.dump(config_data, f)
+        
+        with pytest.raises(ValueError, match="Invalid optimization_goal"):
+            load_experiment_config(str(config_path))
+    
+    def test_runtime_estimation(self):
+        """Test experiment runtime estimation."""
+        from experiment_config import ExperimentConfig, ExperimentDefinition, estimate_runtime
+        
+        config = ExperimentConfig(
+            name="test",
+            base_deck="deck.csv",
+            runs_per_variant=1000,
+            optimization_goal="maximize_survival_engine",
+            experiments=[
+                ExperimentDefinition(
+                    type="replace_quantity",
+                    config={"card": "Forest", "test_quantities": [7, 8, 9]}
+                )
+            ]
+        )
+        
+        estimate = estimate_runtime(config, num_variants=5, num_workers=4)
+        
+        assert estimate['total_variants'] == 5
+        assert estimate['total_simulations'] == 5000
+        assert 'formatted' in estimate
+
+
+class TestVariantGenerator:
+    """Test variant generation from experiment configs."""
+    
+    def test_generate_quantity_variants(self, simple_deck_csv, tmp_path):
+        """Test generating variants with different card quantities."""
+        from variant_generator import VariantGenerator
+        from experiment_config import ExperimentDefinition
+        
+        generator = VariantGenerator(simple_deck_csv, output_dir=str(tmp_path / "variants"))
+        
+        exp = ExperimentDefinition(
+            type="replace_quantity",
+            config={
+                "card": "Forest",
+                "test_quantities": [7, 8, 9],
+                "compensate_with": "Island"
+            }
+        )
+        
+        variants = generator._generate_quantity_variants(exp)
+        
+        # Should generate 3 variants (excluding baseline which is 8 in simple_deck_csv)
+        assert len(variants) >= 2  # At least 2 variants (not including baseline)
+        
+        # Each variant should have changes tracked
+        for variant in variants:
+            assert len(variant.changes) > 0
+            assert variant.deck_path.endswith('.csv')
+            assert os.path.exists(variant.deck_path)
+        
+        # Cleanup
+        generator.cleanup()
+    
+    def test_calculate_deck_differences(self):
+        """Test calculating differences between two decks."""
+        from variant_generator import calculate_deck_differences
+        import pandas as pd
+        
+        # Create simple baseline deck
+        baseline = pd.DataFrame({
+            'Card Name': ['Forest', 'Island', 'Llanowar Elves'],
+            'Quantity': [7, 9, 4],
+            'Type': ['Land', 'Land', 'Creature'],
+            'Conditions': ['', '', '']
+        })
+        
+        # Create variant with Forest changed
+        variant = baseline.copy()
+        variant.loc[variant['Card Name'] == 'Forest', 'Quantity'] = 10
+        
+        changes = calculate_deck_differences(baseline, variant)
+        
+        # Should find 1 change (Forest)
+        assert len(changes) == 1
+        
+        forest_change = changes[0]
+        assert forest_change.card == 'Forest'
+        assert forest_change.baseline_qty == 7
+        assert forest_change.variant_qty == 10
+
+
+class TestExperimentRunner:
+    """Test experiment execution."""
+    
+    def test_run_variant_simulation(self, simple_deck_csv):
+        """Test running simulation for a single variant."""
+        from experiment_runner import run_variant_simulation
+        from variant_generator import Variant, Change
+        
+        variant = Variant(
+            id="test123",
+            name="test_variant",
+            deck_path=simple_deck_csv,
+            changes=[Change("modify", "Forest", 8, 9)]
+        )
+        
+        result = run_variant_simulation(
+            variant=variant,
+            runs=100,
+            turns=4,
+            config={}
+        )
+        
+        assert result['success'] == True
+        assert result['variant'] == variant
+        assert result['results'] is not None
+    
+    def test_verify_experiment_results(self, simple_deck_csv):
+        """Test experiment results verification."""
+        from experiment_runner import verify_experiment_results, ExperimentResults
+        from experiment_config import ExperimentConfig, ExperimentDefinition
+        from variant_generator import Variant, Change
+        
+        # Create mock experiment results
+        config = ExperimentConfig(
+            name="test",
+            base_deck=simple_deck_csv,
+            runs_per_variant=100,
+            optimization_goal="maximize_survival_engine",
+            experiments=[
+                ExperimentDefinition(
+                    type="replace_quantity",
+                    config={"card": "Forest", "test_quantities": [7]}
+                )
+            ]
+        )
+        
+        variant = Variant(
+            id="test123",
+            name="test_variant",
+            deck_path=simple_deck_csv,
+            changes=[Change("modify", "Forest", 8, 9)]
+        )
+        
+        # Mock baseline results (just use empty tuple for structure)
+        from madness import run_simulations
+        baseline_results = run_simulations(simple_deck_csv, 50, 4, {})
+        
+        variant_results = [{
+            'variant': variant,
+            'results': baseline_results,
+            'success': True,
+            'error': None
+        }]
+        
+        experiment_results = ExperimentResults(
+            experiment_name="test",
+            baseline_results=baseline_results,
+            variant_results=variant_results,
+            variants=[variant],
+            execution_time=1.0,
+            config=config
+        )
+        
+        is_valid = verify_experiment_results(experiment_results)
+        assert is_valid == True
+
+
+class TestExperimentAnalyzer:
+    """Test experiment analysis and ranking."""
+    
+    def test_extract_goal_score(self, simple_deck_csv):
+        """Test extracting optimization goal scores from results."""
+        from experiment_analyzer import extract_goal_score
+        from madness import run_simulations
+        
+        results = run_simulations(simple_deck_csv, 100, 4, {})
+        
+        # Test various goals
+        score = extract_goal_score(results, "minimize_mulligans")
+        assert isinstance(score, float)
+        assert score >= 0
+        
+        score = extract_goal_score(results, "maximize_survival_engine")
+        assert isinstance(score, float)
+        assert 0 <= score <= 100
+    
+    def test_generate_recommendation(self):
+        """Test recommendation generation based on improvement."""
+        from experiment_analyzer import generate_recommendation
+        
+        # Strong improvement
+        rec = generate_recommendation(0.15, 15.0, "maximize_survival_engine")
+        assert "Strong" in rec
+        
+        # Moderate improvement
+        rec = generate_recommendation(0.07, 7.0, "maximize_survival_engine")
+        assert "Moderate" in rec
+        
+        # Weak improvement
+        rec = generate_recommendation(0.03, 3.0, "maximize_survival_engine")
+        assert "Weak" in rec
+        
+        # Decline
+        rec = generate_recommendation(-0.10, -10.0, "maximize_survival_engine")
+        assert "Not Recommended" in rec
+
+
+class TestExperimentExport:
+    """Test experiment results export."""
+    
+    def test_create_rankings_sheet(self, simple_deck_csv):
+        """Test creating rankings dataframe."""
+        from export_experiment import create_rankings_sheet
+        from experiment_analyzer import AnalyzedExperiment, VariantRanking
+        from experiment_runner import ExperimentResults
+        from experiment_config import ExperimentConfig, ExperimentDefinition
+        from variant_generator import Variant, Change
+        from madness import run_simulations
+        
+        # Create mock analyzed experiment
+        config = ExperimentConfig(
+            name="test",
+            base_deck=simple_deck_csv,
+            runs_per_variant=100,
+            optimization_goal="maximize_survival_engine",
+            experiments=[
+                ExperimentDefinition(
+                    type="replace_quantity",
+                    config={"card": "Forest", "test_quantities": [7]}
+                )
+            ]
+        )
+        
+        variant = Variant(
+            id="test123",
+            name="test_variant",
+            deck_path=simple_deck_csv,
+            changes=[Change("modify", "Forest", 8, 9)]
+        )
+        
+        baseline_results = run_simulations(simple_deck_csv, 50, 4, {})
+        
+        ranking = VariantRanking(
+            rank=1,
+            variant=variant,
+            score=0.50,
+            baseline_score=0.45,
+            delta=0.05,
+            delta_pct=11.1,
+            recommendation="✅ Strong"
+        )
+        
+        experiment_results = ExperimentResults(
+            experiment_name="test",
+            baseline_results=baseline_results,
+            variant_results=[],
+            variants=[variant],
+            execution_time=1.0,
+            config=config
+        )
+        
+        analyzed = AnalyzedExperiment(
+            experiment_results=experiment_results,
+            rankings=[ranking],
+            insights=["Test insight"],
+            statistics={"total_variants": 1}
+        )
+        
+        df = create_rankings_sheet(analyzed)
+        
+        assert len(df) == 1
+        assert 'Rank' in df.columns
+        assert 'Variant Name' in df.columns
+        assert 'Score' in df.columns
+        assert df.iloc[0]['Rank'] == 1
+
+
+class TestExperimentIntegration:
+    """Integration tests for complete experiment workflow."""
+    
+    def test_full_experiment_workflow(self, simple_deck_csv, tmp_path):
+        """Test complete experiment from config to export."""
+        from experiment_config import ExperimentConfig, ExperimentDefinition
+        from experiment_runner import run_experiment
+        from experiment_analyzer import analyze_experiment
+        from export_experiment import export_experiment_results
+        from variant_generator import VariantGenerator
+        
+        # Create experiment config
+        config = ExperimentConfig(
+            name="integration_test",
+            base_deck=simple_deck_csv,
+            runs_per_variant=100,  # Minimum for validation
+            optimization_goal="minimize_mulligans",
+            experiments=[
+                ExperimentDefinition(
+                    type="replace_quantity",
+                    config={
+                        "card": "Forest",
+                        "test_quantities": [7, 9],
+                        "compensate_with": "Island"
+                    }
+                )
+            ]
+        )
+        
+        # Run experiment
+        experiment_results = run_experiment(config, {}, num_workers=1)
+        
+        assert experiment_results is not None
+        assert len(experiment_results.variant_results) == 2
+        
+        # Analyze results
+        analyzed = analyze_experiment(experiment_results)
+        
+        assert len(analyzed.rankings) == 2
+        assert analyzed.rankings[0].rank == 1
+        assert analyzed.rankings[1].rank == 2
+        
+        # Export results
+        output_file = tmp_path / "test_experiment.xlsx"
+        export_experiment_results(analyzed, str(output_file))
+        
+        assert output_file.exists()
+        
+        # Cleanup
+        generator = VariantGenerator(simple_deck_csv)
+        generator.cleanup()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
