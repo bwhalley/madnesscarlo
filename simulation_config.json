@@ -3,7 +3,7 @@
     "runs": 1000,
     "turns": 4,
     "output": "simulation_results.xlsx",
-    "key_cards": ["Naturalize", "Counterspell", "Survival of the Fittest"],
+    "key_cards": ["Naturalize", "Counterspell", "Waterfront Bouncer", "Survival of the Fittest"],
     "mulligan_strategy": {
       "enabled": true,
       "min_lands": 2,

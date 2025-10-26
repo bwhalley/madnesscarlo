@@ -1,0 +1,18 @@
+{
+  "experiment_name": "mana_base_key_cards",
+  "base_deck": "deck.csv",
+  "runs_per_variant": 1000,
+  "optimization_goal": "maximize_key_card_access",
+  "secondary_goals": ["minimize_mulligans", "maximize_survival_engine"],
+  "comments": "Optimize mana base to cast key cards requiring both UU (Counterspell, Bouncer) and 1G (Survival, Naturalize). Tests Island counts 7-12 with Forest compensating.",
+  "experiments": [
+    {
+      "type": "replace_quantity",
+      "card": "Island",
+      "test_quantities": [7, 8, 9, 10, 11, 12],
+      "compensate_with": "Forest",
+      "comment": "Find optimal Island/Forest split for reliable UU and 1G casting. Current baseline: 9 Islands, 7 Forests."
+    }
+  ]
+}
+

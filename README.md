@@ -489,7 +489,7 @@ Included is a "Madness" themed deck featuring:
 
 ## Testing
 
-This project includes a comprehensive test suite with 80% code coverage.
+This project includes a comprehensive test suite with 70% overall code coverage.
 
 ### Running Tests
 
@@ -502,15 +502,26 @@ This project includes a comprehensive test suite with 80% code coverage.
 
 # Fast tests only
 ./run_tests.sh quick
+
+# Or run directly with pytest
+pytest test_madness.py -v
+pytest test_madness.py --cov=. --cov-report=html
 ```
 
 ### Test Coverage
 
-- **49 tests** covering all core functionality
-- **80% code coverage** of `madness.py`
-- Tests for: condition parsing, deck loading, game state, mulligan logic, simulation, and more
+- **121 tests** covering all functionality
+- **70% overall code coverage** (91% for critical modules)
+- **100% of tests passing**
 
-See `TESTING.md` and `TEST_SUMMARY.md` for detailed testing documentation.
+**Coverage by Feature:**
+- ✅ Core simulation engine: 75%
+- ✅ Comparison utilities: 91%
+- ✅ Export modules: 91%
+- ✅ Experimental framework: 60-68%
+- ✅ All mechanics: Fully tested (madness, flashback, tutoring, returns)
+
+See `TEST_COVERAGE_REPORT.md`, `TESTING.md`, and `TEST_SUMMARY.md` for detailed testing documentation.
 
 ## Command-Line Options
 

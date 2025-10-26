@@ -1,0 +1,18 @@
+{
+  "experiment_name": "22_land_test",
+  "base_deck": "deck.csv",
+  "runs_per_variant": 1000,
+  "optimization_goal": "minimize_mulligans",
+  "secondary_goals": ["maximize_key_card_access", "maximize_survival_engine"],
+  "comments": "Test if adding a 22nd land improves the deck. Compares current 21-land config (9I, 7F) against 22-land configs with either an extra Island or extra Forest. Tests Island counts 9-11 to see the impact.",
+  "experiments": [
+    {
+      "type": "replace_quantity",
+      "card": "Island",
+      "test_quantities": [9, 10, 11],
+      "compensate_with": "Forest",
+      "comment": "First: Tests current baseline (9I) vs more Islands. Since we're compensating with Forest, 9I baseline = 21 lands, 10I = 21 lands, 11I = 21 lands. We'll need to manually test 22 lands."
+    }
+  ]
+}
+
