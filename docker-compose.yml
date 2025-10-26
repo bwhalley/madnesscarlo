@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: madness-postgres
+    environment:
+      POSTGRES_USER: madness_user
+      POSTGRES_PASSWORD: madness_pass_dev
+      POSTGRES_DB: madnesscarlo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U madness_user -d madnesscarlo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - madness-network
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: madness-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - madness-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: madness-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://madness_user:madness_pass_dev@postgres:5432/madnesscarlo
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production-please
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - ENVIRONMENT=development
+      - CORS_ORIGINS=["http://localhost:5173"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/venv  # Prevent overwriting venv
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - madness-network
+
+  # Celery Worker for Background Jobs
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: madness-celery-worker
+    environment:
+      - DATABASE_URL=postgresql://madness_user:madness_pass_dev@postgres:5432/madnesscarlo
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production-please
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/venv
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4
+    networks:
+      - madness-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: madness-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Prevent overwriting node_modules
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - madness-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  madness-network:
+    driver: bridge
+

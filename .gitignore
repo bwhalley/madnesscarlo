@@ -10,6 +10,7 @@ dist/
 downloads/
 eggs/
 .eggs/
+lib/
 lib64/
 parts/
 sdist/
@@ -18,21 +19,29 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Virtual Environment
 venv/
-ENV/
 env/
+ENV/
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-*.cover
-.hypothesis/
-.tox/
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+dist-ssr/
+*.local
 
-# IDEs
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -40,9 +49,30 @@ htmlcov/
 *~
 .DS_Store
 
-# Excel output files (keep example ones but ignore test results)
-test_results.xlsx
+# Testing
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+coverage/
 
-# Temporary files
-~$*.xlsx
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+*.log
+
+# Results
+simulation_results*.xlsx
+experiment_*_results*.xlsx
+comparison_results*.xlsx
+*.xlsx
+!~$*.xlsx
+
+# Temporary
+temp_variants/
 *.tmp
