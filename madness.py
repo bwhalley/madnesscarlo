@@ -79,9 +79,24 @@ def evaluate_ideal_setups(state, config):
             card in state.battlefield and state.battlefield[card] > 0
             for card in required_in_play
         )
+        
+        # Check if any creature is in hand (for Survival engine scenarios)
+        requires_any_creature_in_hand = setup.get("requires_any_creature_in_hand", False)
+        creature_in_hand_ok = True
+        if requires_any_creature_in_hand:
+            # Check if any card in hand is a creature
+            creature_in_hand_ok = any(
+                "creature" in state.deck.card_info.get(card, {}).get("type", "").lower()
+                for card in state.hand.keys()
+            )
+        
+        # Check minimum lands requirement (for setups that need mana)
+        min_lands = setup.get("requires_min_lands", 0)
+        lands_ok = state.lands_in_play >= min_lands
 
         # Check all requirements
-        setup_results[name] = cards_ok and colors_ok and graveyard_ok and in_play_ok
+        setup_results[name] = (cards_ok and colors_ok and graveyard_ok and 
+                               in_play_ok and creature_in_hand_ok and lands_ok)
 
     return setup_results
 
@@ -210,19 +225,23 @@ class GameState:
     
     def play_creature(self, card_name: str):
         """Play a creature from hand to battlefield."""
+        # DISABLED: Focus on hand development, not creature casting
+        # Keep creatures in hand to track what's available
         if self.hand[card_name] > 0:
-            self.hand[card_name] -= 1
-            self.battlefield[card_name] += 1
-            self.spells_cast[card_name] += 1
+            # self.hand[card_name] -= 1  # DISABLED: Keep in hand
+            # self.battlefield[card_name] += 1  # DISABLED: Don't put on battlefield
+            self.spells_cast[card_name] += 1  # Still track for statistics
     
     def cast_with_madness(self, card_name: str):
         """Cast a card using madness (from discard)."""
-        # Card goes directly to battlefield if creature, else to graveyard after resolution
+        # DISABLED: Creatures don't go to battlefield, focusing on hand development
+        # Card goes directly to graveyard regardless of type
         card_data = self.deck.card_info.get(card_name, {})
-        if "creature" in card_data.get("type", "").lower():
-            self.battlefield[card_name] += 1
-        else:
-            self.graveyard[card_name] += 1
+        # if "creature" in card_data.get("type", "").lower():
+        #     self.battlefield[card_name] += 1  # DISABLED
+        # else:
+        #     self.graveyard[card_name] += 1
+        self.graveyard[card_name] += 1  # All madness cards go to graveyard
         self.madness_casts[card_name] += 1
         self.spells_cast[card_name] += 1
     
@@ -233,9 +252,9 @@ class GameState:
             # Card is exiled after flashback (not tracked for now)
             self.flashback_casts[card_name] += 1
             self.spells_cast[card_name] += 1
-            # Create token if applicable (e.g., Roar of the Wurm)
-            if "roar" in card_name.lower():
-                self.battlefield["Wurm Token"] += 1
+            # DISABLED: Don't create creature tokens, focus on hand development
+            # if "roar" in card_name.lower():
+            #     self.battlefield["Wurm Token"] += 1
 
 
 # ---------------- Card Action Definitions ---------------- #
@@ -760,17 +779,20 @@ def analyze_opening_hands(all_results, deck, config):
     Returns DataFrame with patterns and their success rates.
     """
     from collections import defaultdict
+    import statistics
     
     # Group results by pattern
     pattern_data = defaultdict(lambda: {
         "count": 0,
         "setup_success": Counter(),
-        "total_setups_succeeded": 0
+        "total_setups_succeeded": 0,
+        "mulligan_counts": []
     })
     
     for result in all_results:
         pattern = extract_hand_pattern(result["opening_hand"], deck, config)
         pattern_data[pattern]["count"] += 1
+        pattern_data[pattern]["mulligan_counts"].append(result["mulligan_count"])
         
         # Track which setups succeeded
         setups_succeeded_this_game = 0
@@ -790,6 +812,10 @@ def analyze_opening_hands(all_results, deck, config):
             "Pattern": pattern,
             "Games": data["count"],
         }
+        
+        # Calculate median mulligans for this pattern
+        median_mulligans = statistics.median(data["mulligan_counts"])
+        row["Median Mulligans"] = median_mulligans
         
         # Add success rates for each setup
         for setup_name, successes in sorted(data["setup_success"].items()):

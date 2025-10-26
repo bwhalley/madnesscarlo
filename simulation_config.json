@@ -3,7 +3,7 @@
     "runs": 1000,
     "turns": 4,
     "output": "simulation_results.xlsx",
-    "key_cards": ["Naturalize", "Counterspell", "Survival of the Fittest", "Squee, Goblin Nabob"],
+    "key_cards": ["Naturalize", "Counterspell", "Survival of the Fittest"],
     "mulligan_strategy": {
       "enabled": true,
       "min_lands": 2,
@@ -18,21 +18,24 @@
     "ideal_setups": [
       {
         "name": "Survival Engine",
-        "requires_cards": ["Survival of the Fittest", "Squee, Goblin Nabob"],
+        "requires_cards": ["Survival of the Fittest"],
+        "requires_in_play": ["Survival of the Fittest"],
         "requires_colors": ["G"],
+        "requires_min_lands": 2,
+        "requires_any_creature_in_hand": true,
         "turn_limit": 4
       },
       {
         "name": "Counter Protection",
         "requires_cards": ["Counterspell"],
         "requires_colors": ["U"],
-        "turn_limit": 4
+        "turn_limit": 2
       },
       {
         "name": "Naturalize Access",
         "requires_cards": ["Naturalize"],
         "requires_colors": ["G"],
-        "turn_limit": 4
+        "turn_limit": 2
       },
       {
         "name": "Wonder in Graveyard",
