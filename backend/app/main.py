@@ -6,7 +6,9 @@ FastAPI application for running MTG deck simulations.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+
+# Import API routers
+from app.api import auth, decks, simulation_configs, simulations, websocket
 
 # Create FastAPI app
 app = FastAPI(
@@ -26,6 +28,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(auth.router)
+app.include_router(decks.router)
+app.include_router(simulation_configs.router)
+app.include_router(simulations.router)
+app.include_router(websocket.router)  # WebSocket for real-time updates
 
 
 # Root endpoint
@@ -58,16 +67,19 @@ def api_info():
         "name": "MTG Madness Carlo API",
         "version": "1.0.0",
         "features": [
-            "Deck Management",
+            "Authentication (JWT, Google OAuth ready)",
+            "Deck Management (CRUD)",
+            "Simulation Configs (CRUD)",
             "Monte Carlo Simulation",
             "Deck Comparison",
-            "Experiment Framework",
-            "Real-time Progress Updates"
+            "Experiment Framework"
         ],
         "endpoints": {
             "docs": "/docs",
             "health": "/health",
-            "api": "/api"
+            "auth": "/api/auth",
+            "decks": "/api/decks",
+            "configs": "/api/configs"
         }
     }
 

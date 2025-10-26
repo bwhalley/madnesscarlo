@@ -1,100 +1,244 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter } from 'react-router-dom'
-import './App.css'
+/**
+ * Main Application Component
+ */
 
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-})
+import { useState, useEffect } from 'react';
+import { authService } from './services/auth';
+import { AuthForm } from './components/AuthForm';
+import { DeckForm } from './components/DeckForm';
+import { DeckList } from './components/DeckList';
+import { SimulationRunner } from './components/SimulationRunner';
+import { SimulationsList } from './components/SimulationsList';
+import { SimulationResults } from './components/SimulationResults';
+import './App.css';
+
+type Tab = 'decks' | 'create' | 'simulations' | 'run-simulation' | 'profile';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('decks');
+  const [user, setUser] = useState<any>(null);
+  const [selectedSimulation, setSelectedSimulation] = useState<any>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    const authenticated = authService.isAuthenticated();
+    setIsAuthenticated(authenticated);
+    if (authenticated) {
+      setUser(authService.getUser());
+    }
+  }, []);
+
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true);
+    setUser(authService.getUser());
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setIsAuthenticated(false);
+    setUser(null);
+    setActiveTab('decks');
+  };
+
+  const handleDeckCreated = () => {
+    setActiveTab('decks');
+  };
+
+  const handleSimulationStarted = (simulationId: string) => {
+    // Refresh simulations list and switch to simulations tab
+    setRefreshTrigger(prev => prev + 1);
+    setActiveTab('simulations');
+  };
+
+  const handleSelectSimulation = (simulation: any) => {
+    setSelectedSimulation(simulation);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              ⚡ MTG Madness Carlo
+            </h1>
+            <p className="text-gray-600">
+              Monte Carlo Simulation for Magic: The Gathering Decks
+            </p>
+          </div>
+          <AuthForm onSuccess={handleAuthSuccess} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <div className="min-h-screen bg-gray-50">
-          {/* Header */}
-          <header className="bg-white shadow">
-            <div className="max-w-7xl mx-auto px-4 py-6">
-              <h1 className="text-3xl font-bold text-gray-900">
-                🎴 MTG Madness Carlo
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="bg-white shadow-md">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">
+                ⚡ MTG Madness Carlo
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Monte Carlo Simulator for Magic: The Gathering Decks
+              <p className="text-sm text-gray-600">
+                Welcome back, {user?.full_name || user?.username}!
               </p>
             </div>
-          </header>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
 
-          {/* Main Content */}
-          <main className="max-w-7xl mx-auto px-4 py-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-2xl font-semibold mb-4">Welcome! 🚀</h2>
-              
-              <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-green-900">✅ Frontend Running</h3>
-                  <p className="text-sm text-green-700 mt-1">
-                    React + TypeScript + TailwindCSS
-                  </p>
-                </div>
+      {/* Navigation Tabs */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex space-x-8">
+            <button
+              onClick={() => setActiveTab('decks')}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'decks'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📚 My Decks
+            </button>
+            <button
+              onClick={() => setActiveTab('create')}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'create'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              ➕ Create Deck
+            </button>
+            <button
+              onClick={() => setActiveTab('run-simulation')}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'run-simulation'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              🎲 Run Simulation
+            </button>
+            <button
+              onClick={() => setActiveTab('simulations')}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'simulations'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📊 Simulations
+            </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'profile'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              👤 Profile
+            </button>
+          </div>
+        </div>
+      </nav>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-blue-900">🔗 Testing Backend Connection</h3>
-                  <p className="text-sm text-blue-700 mt-1">
-                    API URL: {import.meta.env.VITE_API_URL || 'http://localhost:8000'}
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    Check: <a href="http://localhost:8000" target="_blank" rel="noopener noreferrer" className="underline">http://localhost:8000</a>
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    API Docs: <a href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer" className="underline">http://localhost:8000/docs</a>
-                  </p>
-                </div>
-
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-purple-900">📦 Next Steps</h3>
-                  <ul className="text-sm text-purple-700 mt-2 space-y-1">
-                    <li>• Create authentication pages (login/register)</li>
-                    <li>• Build deck editor component</li>
-                    <li>• Add simulation UI</li>
-                    <li>• Implement results dashboard</li>
-                  </ul>
-                </div>
-
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-2">Quick Links:</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                      View Decks
-                    </button>
-                    <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                      New Simulation
-                    </button>
-                    <button className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
-                      Experiments
-                    </button>
-                    <button className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition">
-                      Compare Decks
-                    </button>
-                  </div>
-                </div>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {activeTab === 'decks' && <DeckList />}
+        {activeTab === 'create' && <DeckForm onSuccess={handleDeckCreated} />}
+        {activeTab === 'run-simulation' && (
+          <SimulationRunner onSimulationStarted={handleSimulationStarted} />
+        )}
+        {activeTab === 'simulations' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <SimulationsList
+                onSelectSimulation={handleSelectSimulation}
+                refreshTrigger={refreshTrigger}
+              />
+            </div>
+            <div className="lg:sticky lg:top-6 h-fit">
+              <SimulationResults simulation={selectedSimulation} />
+            </div>
+          </div>
+        )}
+        {activeTab === 'profile' && (
+          <div className="max-w-2xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6">Profile Information</h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-3 border-b">
+                <span className="text-gray-600 font-medium">User ID:</span>
+                <span className="text-gray-800 font-mono text-sm">{user?.id}</span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b">
+                <span className="text-gray-600 font-medium">Username:</span>
+                <span className="text-gray-800">{user?.username}</span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b">
+                <span className="text-gray-600 font-medium">Email:</span>
+                <span className="text-gray-800">{user?.email}</span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b">
+                <span className="text-gray-600 font-medium">Full Name:</span>
+                <span className="text-gray-800">{user?.full_name}</span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b">
+                <span className="text-gray-600 font-medium">Account Status:</span>
+                <span className={`px-3 py-1 rounded text-sm font-medium ${
+                  user?.is_active 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {user?.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b">
+                <span className="text-gray-600 font-medium">Verified:</span>
+                <span className={`px-3 py-1 rounded text-sm font-medium ${
+                  user?.is_verified 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {user?.is_verified ? 'Verified' : 'Not Verified'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <span className="text-gray-600 font-medium">Member Since:</span>
+                <span className="text-gray-800">
+                  {new Date(user?.created_at).toLocaleDateString()}
+                </span>
               </div>
             </div>
-          </main>
+          </div>
+        )}
+      </main>
 
-          {/* Footer */}
-          <footer className="mt-12 pb-8 text-center text-gray-600 text-sm">
-            MTG Madness Carlo v1.0.0 • Built with FastAPI + React
-          </footer>
+      {/* Footer */}
+      <footer className="mt-16 py-8 bg-white border-t">
+        <div className="container mx-auto px-4 text-center text-gray-600 text-sm">
+          <p>
+            MTG Madness Carlo - Phase 1 Testing Environment
+          </p>
+          <p className="mt-2 text-xs text-gray-500">
+            Backend: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}
+          </p>
         </div>
-      </BrowserRouter>
-    </QueryClientProvider>
-  )
+      </footer>
+    </div>
+  );
 }
 
-export default App
-
+export default App;

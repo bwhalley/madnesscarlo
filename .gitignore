@@ -76,3 +76,12 @@ comparison_results*.xlsx
 # Temporary
 temp_variants/
 *.tmp
+
+# Google Service Account Keys (NEVER COMMIT!)
+google-service-account.json
+*-service-account.json
+backend/google-service-account.json
+
+# Large data files (download separately - see ATOMIC_CARDS_SETUP.md)
+AtomicCards.json
+backend/AtomicCards.json

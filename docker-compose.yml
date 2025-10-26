@@ -50,9 +50,13 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=dev-secret-key-change-in-production-please
       - ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
       - ENVIRONMENT=development
       - CORS_ORIGINS=["http://localhost:5173"]
+      # Google OAuth (set in .env file - see .env.example)
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/auth/google/callback}
     depends_on:
       postgres:
         condition: service_healthy

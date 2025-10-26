@@ -2,7 +2,36 @@
 
 A Monte Carlo simulation tool for analyzing Magic: The Gathering deck performance, with a focus on "Madness" and card draw chains.
 
-## Overview
+## 🚀 NEW: Full-Featured Web Application!
+
+**Phase 2 Complete!** A production-ready web application with comprehensive features:
+- 🌐 **Browser-based interface** - Run simulations from anywhere
+- 👤 **Google OAuth** - Secure authentication with Google accounts
+- 💾 **Cloud storage** - PostgreSQL database for decks and configs
+- 📊 **Interactive dashboards** - Real-time visualization with Recharts
+- 🔄 **Background processing** - Celery + Redis for long-running simulations
+- 📱 **Modern UI** - Built with React, TypeScript, and TailwindCSS
+- ⚡ **Live updates** - WebSocket integration for simulation progress
+- 📈 **Google Sheets export** - One-click export to your Google Drive
+- 🧪 **Comprehensive tests** - 40 tests covering all core functionality
+- 🎯 **Ideal setups tracking** - Monitor multiple win conditions simultaneously
+
+**Quick Start Web App:**
+```bash
+docker-compose up -d
+# Visit http://localhost:5173
+# Login with Google to access all features
+```
+
+📖 **Full Documentation:**
+- [PHASE_1_COMPLETE.md](PHASE_1_COMPLETE.md) - Initial web app setup
+- [PHASE_2_COMPLETE.md](PHASE_2_COMPLETE.md) - Simulation engine integration
+- [TEST_SUITE_SUMMARY.md](TEST_SUITE_SUMMARY.md) - Test coverage details
+- [backend/tests/README.md](backend/tests/README.md) - Testing guide
+
+---
+
+## Overview (CLI Tool)
 
 This simulator runs thousands of games to analyze:
 - Opening hand consistency
@@ -489,9 +518,9 @@ Included is a "Madness" themed deck featuring:
 
 ## Testing
 
-This project includes a comprehensive test suite with 70% overall code coverage.
+This project includes comprehensive test suites for both CLI and web application.
 
-### Running Tests
+### CLI Tool Tests
 
 ```bash
 # Quick test
@@ -508,8 +537,7 @@ pytest test_madness.py -v
 pytest test_madness.py --cov=. --cov-report=html
 ```
 
-### Test Coverage
-
+**CLI Test Coverage:**
 - **121 tests** covering all functionality
 - **70% overall code coverage** (91% for critical modules)
 - **100% of tests passing**
@@ -521,7 +549,41 @@ pytest test_madness.py --cov=. --cov-report=html
 - ✅ Experimental framework: 60-68%
 - ✅ All mechanics: Fully tested (madness, flashback, tutoring, returns)
 
-See `TEST_COVERAGE_REPORT.md`, `TESTING.md`, and `TEST_SUMMARY.md` for detailed testing documentation.
+See `TEST_COVERAGE_REPORT.md`, `TESTING.md`, and `TEST_SUMMARY.md` for detailed CLI testing documentation.
+
+### Web Application Tests
+
+```bash
+# Run all web app tests
+docker exec madness-backend pytest /app/tests/ -v
+
+# Run with coverage
+docker exec madness-backend pytest /app/tests/ --cov=app.simulation --cov-report=term-missing
+
+# Run specific test suite
+docker exec madness-backend pytest /app/tests/test_simulation_engine.py -v
+docker exec madness-backend pytest /app/tests/test_simulation_runner.py -v
+```
+
+**Web App Test Coverage:**
+- ✅ **40 core tests** covering all simulation functionality
+- ✅ **29 engine tests** - Card actions, abilities, mana detection, ideal setups
+- ✅ **11 runner tests** - Aggregation, statistics, progress tracking
+- ✅ **100% of core tests passing** (11 export tests skipped, needs refactoring)
+- ⚡ **Fast execution** - Full suite runs in ~1.5 seconds
+
+**What's Tested:**
+- ✅ All 8 card actions (Careful Study, Frantic Search, Survival, etc.)
+- ✅ All 4 activated abilities (Survival, Wild Mongrel, Roar flashback, etc.)
+- ✅ Mana color detection for all 5 basic land types
+- ✅ All 6 ideal setup condition types
+- ✅ Simulation aggregation and statistics generation
+- ✅ Zero-success setups (not omitted from results)
+- ✅ Card database integration (AtomicCards.json)
+- ✅ Mulligan, graveyard, battlefield tracking
+- ✅ Madness triggers and flashback mechanics
+
+See [TEST_SUITE_SUMMARY.md](TEST_SUITE_SUMMARY.md) and [backend/tests/README.md](backend/tests/README.md) for detailed web app testing documentation.
 
 ## Command-Line Options
 
