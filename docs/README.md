@@ -15,6 +15,7 @@ A Monte Carlo simulation tool for analyzing Magic: The Gathering deck performanc
 - 📈 **Google Sheets export** - One-click export to your Google Drive
 - 🧪 **Comprehensive tests** - 40 tests covering all core functionality
 - 🎯 **Ideal setups tracking** - Monitor multiple win conditions simultaneously
+- 🃏 **Opening hands analysis** - Pattern recognition for optimal starting configurations
 
 **Quick Start Web App:**
 ```bash
@@ -26,6 +27,7 @@ docker-compose up -d
 📖 **Full Documentation:**
 - [PHASE_1_COMPLETE.md](PHASE_1_COMPLETE.md) - Initial web app setup
 - [PHASE_2_COMPLETE.md](PHASE_2_COMPLETE.md) - Simulation engine integration
+- [OPENING_HANDS_FEATURE.md](OPENING_HANDS_FEATURE.md) - Opening hands analysis guide
 - [TEST_SUITE_SUMMARY.md](TEST_SUITE_SUMMARY.md) - Test coverage details
 - [backend/tests/README.md](backend/tests/README.md) - Testing guide
 

@@ -5,7 +5,8 @@ Executes Monte Carlo simulations and aggregates results.
 """
 
 from typing import Dict, List, Any, Optional
-from collections import Counter
+from collections import Counter, defaultdict
+import statistics
 from .engine import (
     Deck, GameState, perform_mulligan, evaluate_ideal_setups,
     CARD_ACTIONS, ACTIVATED_ABILITIES
@@ -106,6 +107,130 @@ def simulate_game(
         "opening_hand": opening_hand_list,
         "opening_hand_size": opening_hand_size
     }
+
+
+def extract_hand_pattern(opening_hand: List[str], deck: Deck, config: Dict) -> str:
+    """
+    Extract a pattern string from an opening hand.
+    Pattern includes: land count, creature count, key cards present.
+    
+    Example patterns:
+    - "3L 2C" - 3 lands, 2 creatures, no key cards
+    - "2L 1C +Survival" - 2 lands, 1 creature, has Survival
+    - "3L 2C +Survival+Squee" - 3 lands, 2 creatures, has both key cards
+    
+    Args:
+        opening_hand: List of card names in the opening hand
+        deck: Deck instance with card_info
+        config: Simulation configuration with key_cards
+        
+    Returns:
+        Pattern string
+    """
+    key_cards = config.get("key_cards", [])
+    
+    # Count lands
+    land_count = sum(
+        1 for card in opening_hand
+        if "land" in deck.card_info.get(card, {}).get("type", "").lower()
+    )
+    
+    # Count creatures
+    creature_count = sum(
+        1 for card in opening_hand
+        if "creature" in deck.card_info.get(card, {}).get("type", "").lower()
+    )
+    
+    # Identify key cards present
+    key_present = sorted([card for card in opening_hand if card in key_cards])
+    
+    # Build pattern string
+    pattern_parts = [f"{land_count}L", f"{creature_count}C"]
+    
+    if key_present:
+        # Abbreviate long names for readability
+        abbreviated = []
+        for card in key_present:
+            if card == "Survival of the Fittest":
+                abbreviated.append("Survival")
+            elif card == "Squee, Goblin Nabob":
+                abbreviated.append("Squee")
+            elif card == "Roar of the Wurm":
+                abbreviated.append("Roar")
+            else:
+                abbreviated.append(card)
+        pattern_parts.append("+" + "+".join(abbreviated))
+    
+    return " ".join(pattern_parts)
+
+
+def analyze_opening_hands(all_results: List[Dict], deck: Deck, config: Dict) -> List[Dict]:
+    """
+    Analyze which opening hand patterns lead to ideal setup success.
+    
+    Args:
+        all_results: List of all simulation results
+        deck: Deck instance with card_info
+        config: Simulation configuration
+        
+    Returns:
+        List of dictionaries with pattern statistics
+    """
+    # Group results by pattern
+    pattern_data = defaultdict(lambda: {
+        "count": 0,
+        "setup_success": Counter(),
+        "total_setups_succeeded": 0,
+        "mulligan_counts": []
+    })
+    
+    for result in all_results:
+        pattern = extract_hand_pattern(result["opening_hand"], deck, config)
+        pattern_data[pattern]["count"] += 1
+        pattern_data[pattern]["mulligan_counts"].append(result["mulligan_count"])
+        
+        # Track which setups succeeded
+        setups_succeeded_this_game = 0
+        for setup_name, succeeded in result["setup_results"].items():
+            if succeeded:
+                pattern_data[pattern]["setup_success"][setup_name] += 1
+                setups_succeeded_this_game += 1
+        
+        pattern_data[pattern]["total_setups_succeeded"] += setups_succeeded_this_game
+    
+    # Build results list
+    rows = []
+    for pattern, data in sorted(pattern_data.items(),
+                                 key=lambda x: x[1]["total_setups_succeeded"],
+                                 reverse=True):
+        row = {
+            "pattern": pattern,
+            "games": data["count"],
+        }
+        
+        # Calculate median mulligans for this pattern
+        median_mulligans = statistics.median(data["mulligan_counts"]) if data["mulligan_counts"] else 0
+        row["median_mulligans"] = median_mulligans
+        
+        # Add success rates for each setup
+        setup_percentages = {}
+        for setup_name, successes in sorted(data["setup_success"].items()):
+            rate = (successes / data["count"]) * 100
+            setup_percentages[setup_name] = round(rate, 1)
+        
+        row["setup_success_rates"] = setup_percentages
+        
+        # Overall success metric (average across all setups)
+        if data["setup_success"]:
+            total_possible = data["count"] * len(data["setup_success"])
+            total_successes = sum(data["setup_success"].values())
+            row["avg_success_percentage"] = round((total_successes / total_possible) * 100, 1)
+        else:
+            row["avg_success_percentage"] = 0.0
+        
+        rows.append(row)
+    
+    return rows
 
 
 def run_simulations(
@@ -293,6 +418,10 @@ def run_simulations(
         "turns_simulated": turns
     }
     
+    # Analyze opening hands
+    deck = Deck(cards_data)
+    opening_hands_stats = analyze_opening_hands(all_results, deck, config or {})
+    
     return {
         "summary": summary,
         "card_stats": card_stats,
@@ -304,6 +433,7 @@ def run_simulations(
         "madness_stats": madness_stats,
         "flashback_stats": flashback_stats,
         "tutored_stats": tutored_stats,
+        "opening_hands_stats": opening_hands_stats,
         "all_results": all_results  # Include for detailed analysis
     }
 

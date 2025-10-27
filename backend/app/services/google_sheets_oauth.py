@@ -64,6 +64,7 @@ class GoogleSheetsOAuthExporter:
                     {'properties': {'title': 'Card Statistics', 'gridProperties': {'frozenRowCount': 1}}},
                     {'properties': {'title': 'Key Cards', 'gridProperties': {'frozenRowCount': 1}}},
                     {'properties': {'title': 'Ideal Setups', 'gridProperties': {'frozenRowCount': 1}}},
+                    {'properties': {'title': 'Opening Hands', 'gridProperties': {'frozenRowCount': 1}}},
                     {'properties': {'title': 'Mulligan Analysis', 'gridProperties': {'frozenRowCount': 1}}},
                     {'properties': {'title': 'Graveyard Stats', 'gridProperties': {'frozenRowCount': 1}}},
                     {'properties': {'title': 'Battlefield Stats', 'gridProperties': {'frozenRowCount': 1}}},
@@ -104,6 +105,7 @@ class GoogleSheetsOAuthExporter:
             self._populate_card_statistics(sheets_service, spreadsheet_id, simulation_data)
             self._populate_key_cards(sheets_service, spreadsheet_id, simulation_data)
             self._populate_ideal_setups(sheets_service, spreadsheet_id, simulation_data)
+            self._populate_opening_hands(sheets_service, spreadsheet_id, simulation_data)
             self._populate_mulligan(sheets_service, spreadsheet_id, simulation_data)
             self._populate_graveyard(sheets_service, spreadsheet_id, simulation_data)
             self._populate_battlefield(sheets_service, spreadsheet_id, simulation_data)
@@ -272,6 +274,67 @@ class GoogleSheetsOAuthExporter:
         sheets_service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id,
             range='Ideal Setups!A1',
+            valueInputOption='USER_ENTERED',
+            body={'values': values}
+        ).execute()
+    
+    def _populate_opening_hands(
+        self,
+        sheets_service,
+        spreadsheet_id: str,
+        data: Dict[str, Any]
+    ):
+        """Populate Opening Hands tab"""
+        opening_hands_stats = data.get('opening_hands_stats', [])
+        
+        if not opening_hands_stats or len(opening_hands_stats) == 0:
+            values = [['No opening hand patterns found']]
+        else:
+            # Get all setup names for column headers
+            setup_names = []
+            if opening_hands_stats and len(opening_hands_stats) > 0:
+                for pattern_data in opening_hands_stats:
+                    if isinstance(pattern_data, dict):
+                        setup_rates = pattern_data.get('setup_success_rates', {})
+                        for setup_name in setup_rates.keys():
+                            if setup_name not in setup_names:
+                                setup_names.append(setup_name)
+            
+            setup_names = sorted(setup_names)
+            
+            # Build header row
+            header = ['Pattern', 'Games', 'Median Mulligans', 'Avg Success %']
+            header.extend([f"{name} %" for name in setup_names])
+            values = [header]
+            
+            # opening_hands_stats is a list of dicts with: pattern, games, median_mulligans, 
+            # setup_success_rates (dict), avg_success_percentage
+            if isinstance(opening_hands_stats, list):
+                for item in opening_hands_stats:
+                    if isinstance(item, dict):
+                        pattern = item.get('pattern', 'Unknown')
+                        games = item.get('games', 0)
+                        median_mulligans = item.get('median_mulligans', 0)
+                        avg_success = item.get('avg_success_percentage', 0)
+                        setup_rates = item.get('setup_success_rates', {})
+                        
+                        row = [
+                            pattern,
+                            games,
+                            f"{median_mulligans:.1f}",
+                            f"{avg_success:.1f}%"
+                        ]
+                        
+                        # Add success rate for each setup (in same order as headers)
+                        for setup_name in setup_names:
+                            rate = setup_rates.get(setup_name, 0)
+                            row.append(f"{rate:.1f}%")
+                        
+                        values.append(row)
+        
+        sheets_service.spreadsheets().values().update(
+            spreadsheetId=spreadsheet_id,
+            range='Opening Hands!A1',
             valueInputOption='USER_ENTERED',
             body={'values': values}
         ).execute()
@@ -497,6 +560,7 @@ class GoogleSheetsOAuthExporter:
         card_stats_id = sheet_ids.get('Card Statistics')
         key_cards_id = sheet_ids.get('Key Cards')
         setups_id = sheet_ids.get('Ideal Setups')
+        opening_hands_id = sheet_ids.get('Opening Hands')
         mulligan_id = sheet_ids.get('Mulligan Analysis')
         graveyard_id = sheet_ids.get('Graveyard Stats')
         battlefield_id = sheet_ids.get('Battlefield Stats')
@@ -566,6 +630,25 @@ class GoogleSheetsOAuthExporter:
                 'repeatCell': {
                     'range': {
                         'sheetId': setups_id,
+                        'startRowIndex': 0,
+                        'endRowIndex': 1
+                    },
+                    'cell': {
+                        'userEnteredFormat': {
+                            'textFormat': {'bold': True},
+                            'backgroundColor': {'red': 0.9, 'green': 0.9, 'blue': 0.9}
+                        }
+                    },
+                    'fields': 'userEnteredFormat(textFormat,backgroundColor)'
+                }
+            })
+        
+        # Bold headers in Opening Hands
+        if opening_hands_id is not None:
+            requests.append({
+                'repeatCell': {
+                    'range': {
+                        'sheetId': opening_hands_id,
                         'startRowIndex': 0,
                         'endRowIndex': 1
                     },
