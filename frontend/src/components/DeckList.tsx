@@ -48,7 +48,7 @@ export function DeckList() {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto mt-8 p-6 text-center">
-        <p className="text-gray-600">Loading decks...</p>
+        <p className="text-gray-600 dark:text-gray-400">Loading decks...</p>
       </div>
     );
   }
@@ -56,7 +56,7 @@ export function DeckList() {
   if (error) {
     return (
       <div className="max-w-6xl mx-auto mt-8 p-6">
-        <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 rounded">
           {error}
         </div>
         <button
@@ -72,7 +72,7 @@ export function DeckList() {
   return (
     <div className="max-w-6xl mx-auto mt-8 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">My Decks ({decks.length})</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Decks ({decks.length})</h2>
         <button
           onClick={loadDecks}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
@@ -82,9 +82,9 @@ export function DeckList() {
       </div>
 
       {decks.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 mb-4">You haven't created any decks yet.</p>
-          <p className="text-sm text-gray-500">
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">You haven't created any decks yet.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Switch to the "Create Deck" tab to build your first deck!
           </p>
         </div>
@@ -97,22 +97,22 @@ export function DeckList() {
                 key={deck.id}
                 className={`border rounded-lg p-4 cursor-pointer transition-all ${
                   selectedDeck?.id === deck.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400 bg-white'
+                    ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-gray-800'
                 }`}
                 onClick={() => setSelectedDeck(deck)}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg">{deck.name}</h3>
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">{deck.name}</h3>
                     {deck.description && (
-                      <p className="text-sm text-gray-600 mt-1">{deck.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{deck.description}</p>
                     )}
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
                       <span>{deck.cards.length} unique cards</span>
                       <span>{deck.card_count || '0'} total cards</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       Created: {new Date(deck.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -121,7 +121,7 @@ export function DeckList() {
                       e.stopPropagation();
                       handleDelete(deck.id);
                     }}
-                    className="ml-4 text-red-600 hover:text-red-800 text-sm"
+                    className="ml-4 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm"
                   >
                     Delete
                   </button>
@@ -133,49 +133,49 @@ export function DeckList() {
           {/* Deck Details */}
           <div className="lg:sticky lg:top-6 h-fit">
             {selectedDeck ? (
-              <div className="border border-gray-300 rounded-lg p-6 bg-white">
-                <h3 className="text-xl font-bold mb-4">{selectedDeck.name}</h3>
+              <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-white dark:bg-gray-800">
+                <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">{selectedDeck.name}</h3>
                 {selectedDeck.description && (
-                  <p className="text-gray-700 mb-4">{selectedDeck.description}</p>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">{selectedDeck.description}</p>
                 )}
                 
-                <div className="mb-4 pb-4 border-b">
-                  <p className="text-sm text-gray-600">
+                <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     <strong>Total Cards:</strong> {selectedDeck.card_count || '0'}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     <strong>Unique Cards:</strong> {selectedDeck.cards.length}
                   </p>
                 </div>
 
-                <h4 className="font-semibold mb-2">Decklist:</h4>
-                <div className="max-h-96 overflow-y-auto bg-gray-50 rounded p-3">
+                <h4 className="font-semibold mb-2 text-gray-900 dark:text-white">Decklist:</h4>
+                <div className="max-h-96 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded p-3">
                   {selectedDeck.cards.map((card, index) => (
                     <div
                       key={index}
-                      className="font-mono text-sm py-1 border-b border-gray-200 last:border-0"
+                      className="font-mono text-sm py-1 border-b border-gray-200 dark:border-gray-700 last:border-0 text-gray-900 dark:text-gray-100"
                     >
                       {card.quantity}x {card.name}
                       {card.type && (
-                        <span className="text-gray-500 ml-2">({card.type})</span>
+                        <span className="text-gray-500 dark:text-gray-400 ml-2">({card.type})</span>
                       )}
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-xs text-gray-500">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     <strong>Deck ID:</strong> {selectedDeck.id}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     <strong>Created:</strong>{' '}
                     {new Date(selectedDeck.created_at).toLocaleString()}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="border border-gray-300 rounded-lg p-6 bg-gray-50 text-center">
-                <p className="text-gray-500">
+              <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-gray-50 dark:bg-gray-900 text-center">
+                <p className="text-gray-500 dark:text-gray-400">
                   Select a deck to view its details
                 </p>
               </div>

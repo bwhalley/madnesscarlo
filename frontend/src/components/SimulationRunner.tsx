@@ -169,7 +169,7 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto mt-8 p-6 text-center">
-        <p className="text-gray-600">Loading...</p>
+        <p className="text-gray-600 dark:text-gray-400">Loading...</p>
       </div>
     );
   }
@@ -177,7 +177,7 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
   if (decks.length === 0) {
     return (
       <div className="max-w-2xl mx-auto mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <h3 className="text-lg font-semibold text-yellow-800 mb-2">No Decks Found</h3>
+        <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">No Decks Found</h3>
         <p className="text-yellow-700 mb-4">
           You need to create a deck before running simulations.
         </p>
@@ -189,19 +189,19 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
   }
 
   return (
-    <div className="max-w-2xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-2xl mx-auto mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6">Run Simulation</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Select Deck *
           </label>
           <select
             value={formData.deck_id}
             onChange={(e) => setFormData({ ...formData, deck_id: e.target.value })}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">-- Select a deck --</option>
             {decks && decks.length > 0 ? (
@@ -215,13 +215,13 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Select Configuration (Optional)
           </label>
           <select
             value={formData.config_id}
             onChange={(e) => setFormData({ ...formData, config_id: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">-- Select a configuration (optional) --</option>
             {configs && configs.length > 0 ? (
@@ -233,7 +233,7 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
             ) : null}
           </select>
           {configs && configs.length === 0 && (
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               No configurations found. Using default settings.
             </p>
           )}
@@ -241,7 +241,7 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Number of Runs
             </label>
             <input
@@ -251,15 +251,15 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
               step="100"
               value={formData.runs}
               onChange={(e) => setFormData({ ...formData, runs: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               More runs = more accurate results
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Turns to Simulate
             </label>
             <input
@@ -268,9 +268,9 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
               max="20"
               value={formData.turns}
               onChange={(e) => setFormData({ ...formData, turns: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Typically 4-6 turns
             </p>
           </div>
@@ -278,7 +278,7 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 className="font-semibold text-blue-900 mb-2">📊 What This Does</h4>
-          <ul className="text-sm text-blue-800 space-y-1">
+          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
             <li>• Simulates {formData.runs.toLocaleString()} games with your deck</li>
             <li>• Tracks card draw rates and key card access</li>
             <li>• Evaluates ideal setup success rates</li>
@@ -314,13 +314,13 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
         )}
 
         {error && (
-          <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="p-3 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 rounded">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+          <div className="p-3 bg-green-100 dark:bg-green-900 border border-green-400 text-green-700 rounded">
             {success}
           </div>
         )}
@@ -335,7 +335,7 @@ export function SimulationRunner({ onSimulationStarted }: SimulationRunnerProps)
       </form>
 
       <div className="mt-6 pt-6 border-t">
-        <p className="text-sm text-gray-600 text-center">
+        <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
           Simulations run in the background. You can navigate away and check back later.
         </p>
       </div>

@@ -81,7 +81,7 @@ export function ExportToSheetsButton({ simulationId, simulationName }: ExportToS
         </button>
         
         {!loading && !spreadsheetUrl && (
-          <p className="text-xs text-gray-500 mt-1 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
             Creates a formatted spreadsheet in your Google Drive
           </p>
         )}
@@ -94,7 +94,7 @@ export function ExportToSheetsButton({ simulationId, simulationName }: ExportToS
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-medium text-green-800">{success}</p>
+              <p className="text-sm font-medium text-green-800 dark:text-green-200">{success}</p>
               <a
                 href={spreadsheetUrl}
                 target="_blank"
@@ -111,7 +111,7 @@ export function ExportToSheetsButton({ simulationId, simulationName }: ExportToS
                   setSuccess(null);
                   setSpreadsheetUrl(null);
                 }}
-                className="block mt-2 text-xs text-green-600 hover:text-green-800 underline"
+                className="block mt-2 text-xs text-green-600 hover:text-green-800 dark:text-green-200 underline"
               >
                 Export again
               </button>
@@ -127,7 +127,7 @@ export function ExportToSheetsButton({ simulationId, simulationName }: ExportToS
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-medium text-red-800">Failed to export</p>
+              <p className="text-sm font-medium text-red-800 dark:text-red-200">Failed to export</p>
               <p className="text-sm text-red-700 mt-1">{error}</p>
               {error.includes('log in') && (
                 <button

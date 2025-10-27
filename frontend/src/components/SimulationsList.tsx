@@ -76,7 +76,7 @@ export function SimulationsList({ onSelectSimulation, refreshTrigger }: Simulati
   if (loading) {
     return (
       <div className="p-6 text-center">
-        <p className="text-gray-600">Loading simulations...</p>
+        <p className="text-gray-600 dark:text-gray-400">Loading simulations...</p>
       </div>
     );
   }
@@ -84,7 +84,7 @@ export function SimulationsList({ onSelectSimulation, refreshTrigger }: Simulati
   if (error) {
     return (
       <div className="p-6">
-        <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 rounded">
           {error}
         </div>
         <button
@@ -99,9 +99,9 @@ export function SimulationsList({ onSelectSimulation, refreshTrigger }: Simulati
 
   if (simulations.length === 0) {
     return (
-      <div className="text-center py-12 bg-gray-50 rounded-lg m-6">
-        <p className="text-gray-600 mb-4">No simulations yet.</p>
-        <p className="text-sm text-gray-500">
+      <div className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-lg m-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">No simulations yet.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Go to the "Run Simulation" tab to start your first simulation!
         </p>
       </div>
@@ -136,7 +136,7 @@ export function SimulationsList({ onSelectSimulation, refreshTrigger }: Simulati
                 <div className="flex items-center gap-3 mb-2">
                   {getStatusBadge(simulation.status)}
                   {simulation.status === 'running' && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-blue-600 h-2 rounded-full transition-all"
@@ -150,22 +150,22 @@ export function SimulationsList({ onSelectSimulation, refreshTrigger }: Simulati
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Runs:</span>
+                    <span className="text-gray-500 dark:text-gray-400">Runs:</span>
                     <span className="ml-2 font-medium">{simulation.runs.toLocaleString()}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Turns:</span>
+                    <span className="text-gray-500 dark:text-gray-400">Turns:</span>
                     <span className="ml-2 font-medium">{simulation.turns}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Created:</span>
+                    <span className="text-gray-500 dark:text-gray-400">Created:</span>
                     <span className="ml-2 font-medium">
                       {new Date(simulation.created_at).toLocaleDateString()}
                     </span>
                   </div>
                   {simulation.completed_at && (
                     <div>
-                      <span className="text-gray-500">Completed:</span>
+                      <span className="text-gray-500 dark:text-gray-400">Completed:</span>
                       <span className="ml-2 font-medium">
                         {new Date(simulation.completed_at).toLocaleTimeString()}
                       </span>
@@ -182,7 +182,7 @@ export function SimulationsList({ onSelectSimulation, refreshTrigger }: Simulati
 
               <button
                 onClick={(e) => handleDelete(simulation.id, e)}
-                className="ml-4 text-red-600 hover:text-red-800 text-sm"
+                className="ml-4 text-red-600 hover:text-red-800 dark:text-red-200 text-sm"
               >
                 Delete
               </button>
