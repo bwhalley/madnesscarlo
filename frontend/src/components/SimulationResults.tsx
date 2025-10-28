@@ -3,7 +3,9 @@
  * Displays detailed simulation results with statistics and charts
  */
 
+import { useState, useEffect } from 'react';
 import { Simulation } from '../services/simulations';
+import { configsService, SimulationConfig } from '../services/configs';
 import { ExportToSheetsButton } from './ExportToSheetsButton';
 
 interface SimulationResultsProps {
@@ -11,6 +13,20 @@ interface SimulationResultsProps {
 }
 
 export function SimulationResults({ simulation }: SimulationResultsProps) {
+  const [config, setConfig] = useState<SimulationConfig | null>(null);
+
+  useEffect(() => {
+    // Fetch the configuration details if config_id is present
+    if (simulation?.config_id) {
+      configsService.getConfig(simulation.config_id)
+        .then(setConfig)
+        .catch(err => {
+          console.error('Failed to load configuration:', err);
+          setConfig(null);
+        });
+    }
+  }, [simulation?.config_id]);
+
   if (!simulation) {
     return (
       <div className="p-6 text-center bg-gray-50 dark:bg-gray-900 rounded-lg">
@@ -84,17 +100,22 @@ export function SimulationResults({ simulation }: SimulationResultsProps) {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-green-900">✅ Simulation Complete</h2>
-            <p className="text-sm text-green-700 mt-1">
+            <h2 className="text-2xl font-bold text-green-900 dark:text-green-100">✅ Simulation Complete</h2>
+            <p className="text-sm text-green-700 dark:text-green-300 mt-1">
               Completed on {new Date(simulation.completed_at!).toLocaleString()}
             </p>
+            {config && (
+              <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                <span className="font-semibold">Configuration:</span> {config.name}
+              </p>
+            )}
           </div>
           <div className="text-right">
-            <p className="text-sm text-green-700">Runs: {simulation.runs.toLocaleString()}</p>
-            <p className="text-sm text-green-700">Turns: {simulation.turns}</p>
+            <p className="text-sm text-green-700 dark:text-green-300">Runs: {simulation.runs.toLocaleString()}</p>
+            <p className="text-sm text-green-700 dark:text-green-300">Turns: {simulation.turns}</p>
           </div>
         </div>
         

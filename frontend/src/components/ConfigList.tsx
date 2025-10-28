@@ -278,15 +278,79 @@ export function ConfigList({ onEdit, onDuplicate }: ConfigListProps) {
                   <h4 className="font-semibold mb-2 text-gray-900 dark:text-white">
                     Ideal Setups ({selectedConfig.ideal_setups.length}):
                   </h4>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {selectedConfig.ideal_setups.map((setup: any, idx) => (
                       <div
                         key={idx}
-                        className="p-2 bg-gray-50 dark:bg-gray-900 rounded text-sm text-gray-900 dark:text-gray-100"
+                        className="p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm border border-gray-200 dark:border-gray-700"
                       >
-                        <div className="font-semibold">{setup.name}</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                          Turn limit: {setup.turn_limit}
+                        <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{setup.name}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                          <div><strong>Turn limit:</strong> {setup.turn_limit}</div>
+                          {setup.requires_min_lands > 0 && (
+                            <div><strong>Min lands:</strong> {setup.requires_min_lands}</div>
+                          )}
+                          {setup.requires_cards && setup.requires_cards.length > 0 && (
+                            <div>
+                              <strong>Required cards:</strong>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {setup.requires_cards.map((card: string, i: number) => (
+                                  <span key={i} className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs">
+                                    {card}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {setup.requires_in_play && setup.requires_in_play.length > 0 && (
+                            <div>
+                              <strong>In play:</strong>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {setup.requires_in_play.map((card: string, i: number) => (
+                                  <span key={i} className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-xs">
+                                    {card}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {setup.requires_in_graveyard && setup.requires_in_graveyard.length > 0 && (
+                            <div>
+                              <strong>In graveyard:</strong>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {setup.requires_in_graveyard.map((card: string, i: number) => (
+                                  <span key={i} className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-xs">
+                                    {card}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {setup.requires_colors && setup.requires_colors.length > 0 && (
+                            <div>
+                              <strong>Mana colors:</strong>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {setup.requires_colors.map((color: string, i: number) => (
+                                  <span 
+                                    key={i} 
+                                    className={`px-1.5 py-0.5 rounded text-xs ${
+                                      color === 'W' ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' :
+                                      color === 'U' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                                      color === 'B' ? 'bg-gray-800 dark:bg-gray-700 text-white' :
+                                      color === 'R' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+                                      color === 'G' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                                      'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+                                    }`}
+                                  >
+                                    {color === 'W' ? '⚪' : color === 'U' ? '🔵' : color === 'B' ? '⚫' : color === 'R' ? '🔴' : color === 'G' ? '🟢' : ''} {color}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {setup.requires_any_creature_in_hand && (
+                            <div>✓ Requires creature in hand</div>
+                          )}
                         </div>
                       </div>
                     ))}

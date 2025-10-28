@@ -440,7 +440,7 @@ export function ConfigForm({ config, onSuccess, onCancel }: ConfigFormProps) {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Turn Limit
@@ -470,7 +470,202 @@ export function ConfigForm({ config, onSuccess, onCancel }: ConfigFormProps) {
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center">
+                {/* Required Cards */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Required Cards (must have these cards)
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Card name"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const input = e.target as HTMLInputElement;
+                          const value = input.value.trim();
+                          if (value && !(setup.requires_cards || []).includes(value)) {
+                            updateIdealSetup(idx, 'requires_cards', [...(setup.requires_cards || []), value]);
+                            input.value = '';
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(setup.requires_cards || []).map((card: string, cardIdx: number) => (
+                      <span
+                        key={cardIdx}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded"
+                      >
+                        {card}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newCards = [...(setup.requires_cards || [])];
+                            newCards.splice(cardIdx, 1);
+                            updateIdealSetup(idx, 'requires_cards', newCards);
+                          }}
+                          className="text-purple-600 dark:text-purple-300 hover:text-purple-800 dark:hover:text-purple-100"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cards in Play */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Required in Play (must be on the battlefield)
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Card name"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const input = e.target as HTMLInputElement;
+                          const value = input.value.trim();
+                          if (value && !(setup.requires_in_play || []).includes(value)) {
+                            updateIdealSetup(idx, 'requires_in_play', [...(setup.requires_in_play || []), value]);
+                            input.value = '';
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(setup.requires_in_play || []).map((card: string, cardIdx: number) => (
+                      <span
+                        key={cardIdx}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded"
+                      >
+                        {card}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newCards = [...(setup.requires_in_play || [])];
+                            newCards.splice(cardIdx, 1);
+                            updateIdealSetup(idx, 'requires_in_play', newCards);
+                          }}
+                          className="text-green-600 dark:text-green-300 hover:text-green-800 dark:hover:text-green-100"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cards in Graveyard */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Required in Graveyard
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="Card name"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const input = e.target as HTMLInputElement;
+                          const value = input.value.trim();
+                          if (value && !(setup.requires_in_graveyard || []).includes(value)) {
+                            updateIdealSetup(idx, 'requires_in_graveyard', [...(setup.requires_in_graveyard || []), value]);
+                            input.value = '';
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(setup.requires_in_graveyard || []).map((card: string, cardIdx: number) => (
+                      <span
+                        key={cardIdx}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded"
+                      >
+                        {card}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newCards = [...(setup.requires_in_graveyard || [])];
+                            newCards.splice(cardIdx, 1);
+                            updateIdealSetup(idx, 'requires_in_graveyard', newCards);
+                          }}
+                          className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Required Colors */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Required Mana Colors (e.g., U, U for double blue)
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <select
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          updateIdealSetup(idx, 'requires_colors', [...(setup.requires_colors || []), value]);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="flex-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    >
+                      <option value="">Add a color...</option>
+                      <option value="W">⚪ White (W)</option>
+                      <option value="U">🔵 Blue (U)</option>
+                      <option value="B">⚫ Black (B)</option>
+                      <option value="R">🔴 Red (R)</option>
+                      <option value="G">🟢 Green (G)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {(setup.requires_colors || []).map((color: string, colorIdx: number) => (
+                      <span
+                        key={colorIdx}
+                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${
+                          color === 'W' ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' :
+                          color === 'U' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                          color === 'B' ? 'bg-gray-800 dark:bg-gray-700 text-white' :
+                          color === 'R' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+                          color === 'G' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                          'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+                        }`}
+                      >
+                        {color === 'W' ? '⚪' : color === 'U' ? '🔵' : color === 'B' ? '⚫' : color === 'R' ? '🔴' : color === 'G' ? '🟢' : ''} {color}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newColors = [...(setup.requires_colors || [])];
+                            newColors.splice(colorIdx, 1);
+                            updateIdealSetup(idx, 'requires_colors', newColors);
+                          }}
+                          className="hover:opacity-75"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Add each color symbol separately. For double blue (UU), add U twice.
+                  </p>
+                </div>
+
+                <div className="flex items-center">
                   <input
                     type="checkbox"
                     checked={setup.requires_any_creature_in_hand || false}
@@ -478,7 +673,7 @@ export function ConfigForm({ config, onSuccess, onCancel }: ConfigFormProps) {
                     className="mr-2"
                   />
                   <label className="text-sm text-gray-700 dark:text-gray-300">
-                    Requires creature in hand
+                    Requires any creature in hand
                   </label>
                 </div>
               </div>
