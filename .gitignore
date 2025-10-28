@@ -33,6 +33,7 @@ lerna-debug.log*
 dist/
 dist-ssr/
 *.local
+.vite/
 
 # Environment files
 .env
@@ -85,3 +86,12 @@ backend/google-service-account.json
 # Large data files (download separately - see ATOMIC_CARDS_SETUP.md)
 AtomicCards.json
 backend/AtomicCards.json
+
+# SSL/TLS Certificates and Keys (NEVER COMMIT!)
+nginx/ssl/
+certbot/conf/
+certbot/www/
+*.pem
+*.key
+*.crt
+*.csr
