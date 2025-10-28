@@ -247,6 +247,56 @@ def delete_config(
     return None
 
 
+@router.post("/{config_id}/duplicate", response_model=SimulationConfigResponse, status_code=status.HTTP_201_CREATED)
+def duplicate_config(
+    config_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Duplicate an existing config (your own or public).
+    Creates a new config with the same settings but different name.
+    """
+    # Find the config (must be user's own or public)
+    from sqlalchemy import or_
+    
+    original_config = db.query(SimulationConfig).filter(
+        SimulationConfig.id == config_id,
+        or_(
+            SimulationConfig.user_id == user_id,
+            SimulationConfig.is_public == True
+        )
+    ).first()
+    
+    if not original_config:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Config not found or not accessible"
+        )
+    
+    # Create a new config with the same settings
+    new_config = SimulationConfig(
+        user_id=user_id,
+        name=f"{original_config.name} (Copy)",
+        description=original_config.description,
+        default_runs=original_config.default_runs,
+        default_turns=original_config.default_turns,
+        key_card_turn_limit=original_config.key_card_turn_limit,
+        key_cards=original_config.key_cards,
+        mulligan_strategy=original_config.mulligan_strategy,
+        ideal_setups=original_config.ideal_setups,
+        sideboard_plans=original_config.sideboard_plans,
+        is_default=False,  # Don't make duplicates default
+        is_public=False    # Don't make duplicates public
+    )
+    
+    db.add(new_config)
+    db.commit()
+    db.refresh(new_config)
+    
+    return SimulationConfigResponse.from_orm(new_config)
+
+
 @router.post("/{config_id}/set-default", response_model=SimulationConfigResponse)
 def set_default_config(
     config_id: UUID,

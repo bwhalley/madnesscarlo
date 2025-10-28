@@ -10,10 +10,11 @@ import { DeckList } from './components/DeckList';
 import { SimulationRunner } from './components/SimulationRunner';
 import { SimulationsList } from './components/SimulationsList';
 import { SimulationResults } from './components/SimulationResults';
+import { ConfigManagement } from './components/ConfigManagement';
 import { DarkModeToggle } from './components/DarkModeToggle';
 import './App.css';
 
-type Tab = 'decks' | 'create' | 'simulations' | 'run-simulation' | 'profile';
+type Tab = 'decks' | 'create' | 'configurations' | 'simulations' | 'run-simulation' | 'profile';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -129,6 +130,16 @@ function App() {
               ➕ Create Deck
             </button>
             <button
+              onClick={() => setActiveTab('configurations')}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'configurations'
+                  ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
+              }`}
+            >
+              ⚙️ Configurations
+            </button>
+            <button
               onClick={() => setActiveTab('run-simulation')}
               className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'run-simulation'
@@ -166,6 +177,7 @@ function App() {
       <main className="container mx-auto px-4 py-8">
         {activeTab === 'decks' && <DeckList />}
         {activeTab === 'create' && <DeckForm onSuccess={handleDeckCreated} />}
+        {activeTab === 'configurations' && <ConfigManagement />}
         {activeTab === 'run-simulation' && (
           <SimulationRunner onSimulationStarted={handleSimulationStarted} />
         )}
