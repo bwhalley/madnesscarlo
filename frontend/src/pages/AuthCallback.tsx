@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { api } from '../services/api';
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -38,15 +39,14 @@ export function AuthCallback() {
       setStatus('success');
       setMessage('Successfully logged in with Google!');
       
-      // Fetch user info and store it
-      fetch('http://localhost:8000/api/auth/me', {
+      // Fetch user info and store it using protocol-relative API
+      api.get('/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
       })
-        .then(res => res.json())
-        .then(userData => {
-          localStorage.setItem('user', JSON.stringify(userData));
+        .then(res => {
+          localStorage.setItem('user', JSON.stringify(res.data));
           // Redirect to home page
           setTimeout(() => {
             window.location.href = '/';  // Use full page reload to reinitialize authService

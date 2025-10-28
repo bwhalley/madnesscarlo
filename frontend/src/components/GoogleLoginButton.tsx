@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { api } from '../services/api';
 
 export function GoogleLoginButton() {
   const [loading, setLoading] = useState(false);
@@ -14,17 +15,11 @@ export function GoogleLoginButton() {
     setError(null);
 
     try {
-      // Get authorization URL from backend
-      const response = await fetch('http://localhost:8000/api/auth/google/login');
-      
-      if (!response.ok) {
-        throw new Error('Failed to initiate Google login');
-      }
-
-      const data = await response.json();
+      // Get authorization URL from backend using protocol-relative API
+      const response = await api.get('/api/auth/google/login');
       
       // Redirect to Google
-      window.location.href = data.authorization_url;
+      window.location.href = response.data.authorization_url;
     } catch (err) {
       console.error('Error initiating Google login:', err);
       setError('Failed to connect to Google. Please try again.');

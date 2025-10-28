@@ -35,9 +35,19 @@ export class SimulationWebSocket {
   connect(onUpdate: UpdateCallback): void {
     this.callbacks.add(onUpdate);
 
-    // Construct WebSocket URL
+    // Construct WebSocket URL - use current protocol and hostname
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//localhost:8000/ws/simulations/${this.simulationId}`;
+    const envUrl = import.meta.env.VITE_WS_URL;
+    
+    let wsUrl: string;
+    if (envUrl) {
+      // Use env URL but replace protocol to match current page
+      const cleanUrl = envUrl.replace(/^wss?:\/\//, '');
+      wsUrl = `${protocol}//${cleanUrl}/ws/simulations/${this.simulationId}`;
+    } else {
+      // Default to same host as current page
+      wsUrl = `${protocol}//${window.location.hostname}:8000/ws/simulations/${this.simulationId}`;
+    }
 
     console.log(`🔌 Connecting to WebSocket: ${wsUrl}`);
 
