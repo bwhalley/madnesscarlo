@@ -17,6 +17,11 @@ echo "Domain: $DOMAIN"
 echo "Email: ${EMAIL:-Not provided}"
 echo "Staging mode: $STAGING (0=production, 1=staging)"
 echo ""
+echo "⚠️  IMPORTANT: Let's Encrypt requires port 80 to be accessible for domain verification."
+echo "   If you have another service (like Pi-hole) on port 80, temporarily stop it:"
+echo "   sudo systemctl stop pihole-FTL  # or docker stop pihole"
+echo "   You can restart it after certificates are obtained."
+echo ""
 
 # Validate inputs
 if [ "$DOMAIN" = "localhost" ]; then

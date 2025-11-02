@@ -183,10 +183,10 @@ echo ""
 # Step 7: Verify deployment
 echo "🔍 Step 7: Verifying deployment..."
 
-# Check HTTP redirect
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN 2>/dev/null || echo "000")
+# Check HTTP on port 81
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN:81 2>/dev/null || echo "000")
 if [ "$HTTP_STATUS" -eq "301" ] || [ "$HTTP_STATUS" -eq "302" ] || [ "$HTTP_STATUS" -eq "200" ]; then
-    echo -e "${GREEN}✓${NC} HTTP accessible (status: $HTTP_STATUS)"
+    echo -e "${GREEN}✓${NC} HTTP accessible on port 81 (status: $HTTP_STATUS)"
 else
     echo -e "${YELLOW}⚠${NC}  HTTP status: $HTTP_STATUS (may be expected if SSL is not yet active)"
 fi

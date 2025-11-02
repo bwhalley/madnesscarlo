@@ -114,7 +114,7 @@ services:
     image: nginx:alpine
     container_name: madness-nginx
     ports:
-      - "80:80"
+      - "81:80"
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro

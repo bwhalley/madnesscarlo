@@ -75,8 +75,10 @@ sudo apt install -y git curl wget ufw certbot python3-certbot-nginx
 sudo ufw allow ssh
 sudo ufw allow 22/tcp
 
-# Allow HTTP and HTTPS
-sudo ufw allow 80/tcp
+# Allow HTTP port 81 (for Madness app, not 80 due to Pi-hole)
+sudo ufw allow 81/tcp
+
+# Allow HTTPS
 sudo ufw allow 443/tcp
 
 # Enable firewall
@@ -85,6 +87,8 @@ sudo ufw enable
 # Check status
 sudo ufw status
 ```
+
+**Note**: This app uses **port 81** instead of the standard port 80 to avoid conflicts with other services like Pi-hole.
 
 ## Part 2: Domain Name Configuration
 
