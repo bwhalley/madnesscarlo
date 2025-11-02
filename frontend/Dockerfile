@@ -5,10 +5,11 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Clean install dependencies
-RUN npm ci
+# Install dependencies
+# Use --force to ensure platform-specific binaries are installed correctly
+RUN npm install --force
 
-# Copy application code
+# Copy application code (but not node_modules from host)
 COPY . .
 
 EXPOSE 5173

@@ -1,20 +1,18 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:14-alpine
     container_name: madness-postgres
     environment:
-      POSTGRES_USER: madness_user
-      POSTGRES_PASSWORD: madness_pass_dev
-      POSTGRES_DB: madnesscarlo
+      POSTGRES_USER: ${POSTGRES_USER:-madness_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-madness_pass_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-madness_carlo}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U madness_user -d madnesscarlo"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-madness_user} -d ${POSTGRES_DB:-madness_carlo}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,26 +44,25 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://madness_user:madness_pass_dev@postgres:5432/madnesscarlo
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=dev-secret-key-change-in-production-please
+      - DATABASE_URL=${DATABASE_URL:-postgresql://madness_user:madness_pass_dev@postgres:5432/madnesscarlo}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production-please}
       - ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
-      - ENVIRONMENT=development
-      - CORS_ORIGINS=["http://localhost:5173"]
-      # Google OAuth (set in .env file - see .env.example)
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["https://madness.mtgwhales.com"]}
+      # Google OAuth (set in .env file)
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/auth/google/callback}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/venv  # Prevent overwriting venv
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Note: For production, we don't mount volumes
+    # The code is baked into the image during build
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     networks:
       - madness-network
 
@@ -76,17 +73,15 @@ services:
       dockerfile: Dockerfile
     container_name: madness-celery-worker
     environment:
-      - DATABASE_URL=postgresql://madness_user:madness_pass_dev@postgres:5432/madnesscarlo
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=dev-secret-key-change-in-production-please
+      - DATABASE_URL=${DATABASE_URL:-postgresql://madness_user:madness_pass_dev@postgres:5432/madnesscarlo}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production-please}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/venv
+    # Note: For production, we don't mount volumes
     command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4
     networks:
       - madness-network
@@ -100,11 +95,10 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_WS_URL=ws://localhost:8000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules  # Prevent overwriting node_modules
+      - VITE_API_URL=${FRONTEND_URL:-http://localhost:8000}
+      - VITE_WS_URL=${FRONTEND_URL:-ws://localhost:8000}
+    # Note: For production, we don't mount volumes to avoid platform-specific binary issues
+    # The code is baked into the image during build
     command: npm run dev -- --host 0.0.0.0
     networks:
       - madness-network
