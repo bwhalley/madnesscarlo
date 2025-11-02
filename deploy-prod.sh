@@ -191,16 +191,16 @@ else
     echo -e "${YELLOW}⚠${NC}  HTTP status: $HTTP_STATUS (may be expected if SSL is not yet active)"
 fi
 
-# Check HTTPS
-HTTPS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$DOMAIN 2>/dev/null || echo "000")
+# Check HTTPS on port 8443
+HTTPS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$DOMAIN:8443 2>/dev/null || echo "000")
 if [ "$HTTPS_STATUS" -eq "200" ]; then
-    echo -e "${GREEN}✓${NC} HTTPS accessible"
+    echo -e "${GREEN}✓${NC} HTTPS accessible on port 8443"
 else
     echo -e "${YELLOW}⚠${NC}  HTTPS status: $HTTPS_STATUS (SSL may still be setting up)"
 fi
 
 # Check API health
-API_HEALTH=$(curl -s https://$DOMAIN/api/health 2>/dev/null || echo "")
+API_HEALTH=$(curl -s https://$DOMAIN:8443/api/health 2>/dev/null || echo "")
 if echo "$API_HEALTH" | grep -q "healthy"; then
     echo -e "${GREEN}✓${NC} API health check passed"
 else
@@ -213,7 +213,8 @@ echo -e "${GREEN}✅ Deployment Complete!${NC}"
 echo "=============================================="
 echo ""
 echo "🌐 Your application is available at:"
-echo "   https://$DOMAIN"
+echo "   http://$DOMAIN:81  (HTTP)"
+echo "   https://$DOMAIN:8443  (HTTPS)"
 echo ""
 echo "📊 Useful commands:"
 echo "   docker compose ps              - Check service status"

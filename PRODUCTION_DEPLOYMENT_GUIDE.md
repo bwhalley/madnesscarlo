@@ -78,8 +78,8 @@ sudo ufw allow 22/tcp
 # Allow HTTP port 81 (for Madness app, not 80 due to Pi-hole)
 sudo ufw allow 81/tcp
 
-# Allow HTTPS
-sudo ufw allow 443/tcp
+# Allow HTTPS port 8443 (not 443 due to Tailscale)
+sudo ufw allow 8443/tcp
 
 # Enable firewall
 sudo ufw enable
@@ -88,7 +88,9 @@ sudo ufw enable
 sudo ufw status
 ```
 
-**Note**: This app uses **port 81** instead of the standard port 80 to avoid conflicts with other services like Pi-hole.
+**Note**: This app uses non-standard ports to avoid conflicts:
+- **Port 81** for HTTP (instead of 80, which is used by Pi-hole)
+- **Port 8443** for HTTPS (instead of 443, which is used by Tailscale)
 
 ## Part 2: Domain Name Configuration
 

@@ -115,7 +115,7 @@ services:
     container_name: madness-nginx
     ports:
       - "81:80"
-      - "443:443"
+      - "8443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
