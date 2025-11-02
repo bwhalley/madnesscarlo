@@ -76,6 +76,7 @@ echo ""
 echo "📝 Creating dummy certificate for $DOMAIN..."
 CERT_PATH="/etc/letsencrypt/live/$DOMAIN"
 docker-compose -f "$COMPOSE_FILE" run --rm --entrypoint "\
+  mkdir -p '$CERT_PATH' && \
   openssl req -x509 -nodes -newkey rsa:4096 -days 1 \
     -keyout '$CERT_PATH/privkey.pem' \
     -out '$CERT_PATH/fullchain.pem' \
