@@ -1,15 +1,17 @@
-FROM node:18-slim
+FROM node:18
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files only
+COPY package.json ./
 
-# Install dependencies
-# Use --force to ensure platform-specific binaries are installed correctly
-RUN npm install --force
+# Clean npm cache and install dependencies fresh
+# This ensures platform-specific binaries are built for Linux
+RUN npm cache clean --force && \
+    rm -rf node_modules package-lock.json && \
+    npm install
 
-# Copy application code (but not node_modules from host)
+# Copy application code (excluding node_modules via .dockerignore)
 COPY . .
 
 EXPOSE 5173
