@@ -111,6 +111,10 @@ echo ""
 echo "📜 Step 1: Setting up SSL certificates with Let's Encrypt..."
 if [ -f ./init-letsencrypt.sh ]; then
     chmod +x ./init-letsencrypt.sh
+    # Export environment variables for the SSL script
+    export DOMAIN="${DOMAIN}"
+    export SSL_EMAIL="${CERTBOT_EMAIL}"
+    export SSL_STAGING="${SSL_STAGING:-1}"
     ./init-letsencrypt.sh
     echo -e "${GREEN}✓${NC} SSL certificates configured"
 else
